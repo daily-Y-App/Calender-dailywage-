@@ -4,44 +4,56 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Work Calendar & 15-Days Slip</title>
-    
+
     <meta name="theme-color" content="#1a2a6c">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2371/2371131.png">
-    <link rel="manifest" href='data:application/json,{"name":"Work Slip App","short_name":"WorkSlip","start_url":".","display":"standalone","background_color":"#f4f7f6","theme_color":"#1a2a6c","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/2371/2371131.png","sizes":"512x512","type":"image/png"}]}'>
+    
+    <link rel="manifest" href="./manifest.json">
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
     <style>
-        /* မူလ Style များအတိုင်းထားရှိပါသည် */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background: #f4f7f6; color: #333; padding-bottom: 30px; }
+        body { background: #f4f7f6; color: #333; padding-bottom: 30px; -webkit-tap-highlight-color: transparent; }
+        
         .header { background: linear-gradient(135deg, #1a2a6c, #b21f1f); color: white; padding: 20px; text-align: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+        
         .calendar-container { padding: 10px; }
         .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: white; padding: 12px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        
         .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
         .day-name { text-align: center; font-weight: bold; font-size: 12px; color: #777; padding: 5px 0; }
-        .day { background: white; aspect-ratio: 1/1; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 14px; position: relative; border: 1px solid #eee; transition: 0.2s; }
-        .day.has-inc { background: #e8f5e9; }
+        
+        .day { background: white; aspect-ratio: 1/1; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 14px; position: relative; border: 1px solid #eee; transition: 0.2s; cursor: pointer; }
+        .day:active { transform: scale(0.95); background: #f0f0f0; }
+        .day.has-inc { background: #e8f5e9; border-color: #a5d6a7; }
         .day.has-exp { border-bottom: 3px solid #ffcdd2; }
+        
         .dot-inc { width: 5px; height: 5px; background: #4CAF50; border-radius: 50%; margin-top: 2px; }
         .dot-exp { width: 5px; height: 5px; background: #f44336; border-radius: 50%; margin-top: 2px; }
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center; padding: 15px; overflow-y: auto; }
-        .slip-card { background: white; width: 100%; max-width: 360px; border-radius: 15px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
-        .slip-title { text-align: center; border-bottom: 2px dashed #ddd; padding-bottom: 10px; margin-bottom: 15px; }
-        .slip-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; align-items: center; }
-        .total-row { border-top: 2px solid #333; margin-top: 10px; padding-top: 10px; font-weight: bold; font-size: 18px; color: #b21f1f; }
+
         .range-selector { background: white; margin: 10px; padding: 15px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center; }
-        .btn { padding: 12px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; color: white; transition: 0.3s; }
-        .btn-main { background: #1a2a6c; width: 100%; margin-top: 10px; }
-        .btn-share { background: #25D366; flex: 1; }
-        .btn-close { background: #666; flex: 1; }
+        
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center; padding: 15px; overflow-y: auto; }
+        .slip-card { background: white; width: 100%; max-width: 360px; border-radius: 15px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); color: #333; }
+        
+        .btn { padding: 12px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn-main { background: #1a2a6c; color: white; width: 100%; margin-top: 10px; }
         .btn-group { display: flex; gap: 10px; margin-top: 15px; width: 100%; max-width: 360px; }
+        .btn-share { background: #25D366; color: white; flex: 1; }
+        .btn-close { background: #666; color: white; flex: 1; }
+
+        .slip-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; }
+        .total-row { border-top: 2px solid #333; margin-top: 10px; padding-top: 10px; font-weight: bold; font-size: 18px; color: #b21f1f; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h2 id="userName">User Name</h2>
-        <p id="userCode" style="font-size: 12px; opacity: 0.8;">CODE: EMP001</p>
+        <h2 id="userName">Loading...</h2>
+        <p id="userCode" style="font-size: 12px; opacity: 0.8;">CODE: ---</p>
     </div>
 
     <div class="range-selector">
@@ -51,14 +63,14 @@
             <span style="align-self: center;">မှ</span>
             <input type="date" id="endDate" style="flex:1; padding: 8px; border-radius: 5px; border:1px solid #ddd;">
         </div>
-        <button class="btn btn-main" onclick="generateRangeSlip()">🧾 ၁၅ ရက်စာ စလစ်ထုတ်မည်</button>
+        <button class="btn btn-main" onclick="generateRangeSlip()">🧾 စလစ်ထုတ်မည်</button>
     </div>
 
     <div class="calendar-container">
         <div class="calendar-header">
-            <button onclick="changeMonth(-1)" style="border:none; background:none; font-size:20px;">❮</button>
+            <button onclick="changeMonth(-1)" style="border:none; background:none; font-size:20px; padding: 10px;">❮</button>
             <h3 id="monthDisplay">Month Year</h3>
-            <button onclick="changeMonth(1)" style="border:none; background:none; font-size:20px;">❯</button>
+            <button onclick="changeMonth(1)" style="border:none; background:none; font-size:20px; padding: 10px;">❯</button>
         </div>
         <div class="grid" id="calendarGrid"></div>
     </div>
@@ -66,17 +78,14 @@
     <div id="slipModal" class="modal">
         <div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
             <div id="capture-area" class="slip-card">
-                <div class="slip-title">
+                <div style="text-align: center; border-bottom: 2px dashed #ddd; margin-bottom: 15px; padding-bottom: 10px;">
                     <h2 id="slipTypeTitle">PAYMENT SLIP</h2>
-                    <p id="slipDateRange" style="font-size: 12px; color: #666; margin-top: 5px;"></p>
+                    <p id="slipDateRange" style="font-size: 12px; color: #666;"></p>
                 </div>
                 <div id="slipContent"></div>
                 <div class="slip-row total-row">
                     <span>အသားတင်ရငွေ</span>
                     <span id="slipTotal">0฿</span>
-                </div>
-                <div id="rateFooter" style="text-align: center; font-size: 11px; margin-top: 15px; color: #777; border-top: 1px solid #eee; padding-top: 10px;">
-                    Daily Wage: <span id="ftWage">0</span>฿ | OT: <span id="ftOt">0</span>฿
                 </div>
             </div>
             <div class="btn-group">
@@ -87,30 +96,16 @@
     </div>
 
     <script>
-        // PWA Service Worker Registration
+        // --- PWA Service Worker Registration ---
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                const swCode = `
-                    const CACHE_NAME = 'workslip-v1';
-                    const ASSETS = [
-                        './',
-                        './index.html',
-                        'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'
-                    ];
-                    self.addEventListener('install', e => {
-                        e.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)));
-                    });
-                    self.addEventListener('fetch', e => {
-                        e.respondWith(caches.match(e.request).then(res => res || fetch(e.request)));
-                    });
-                `;
-                const blob = new Blob([swCode], { type: 'application/javascript' });
-                const swUrl = URL.createObjectURL(blob);
-                navigator.serviceWorker.register(swUrl).catch(err => console.log('SW error', err));
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('PWA: Service Worker Registered'))
+                    .catch(err => console.log('PWA: Registration Failed', err));
             });
         }
 
-        /* မူလ JavaScript Logic များအတိုင်းထားရှိပါသည် */
+        // --- Original Logic (Data Connections) ---
         let records = JSON.parse(localStorage.getItem('f_recs')) || [];
         let profile = JSON.parse(localStorage.getItem('f_prof')) || { name: 'User', code: 'EMP001', wage: 375, ot: 69 };
         let currentDate = new Date();
@@ -118,8 +113,6 @@
         function init() {
             document.getElementById('userName').innerText = profile.name;
             document.getElementById('userCode').innerText = "CODE: " + profile.code;
-            document.getElementById('ftWage').innerText = profile.wage;
-            document.getElementById('ftOt').innerText = profile.ot;
             renderCalendar();
         }
 
@@ -140,17 +133,12 @@
 
             for (let i = 1; i <= daysInMonth; i++) {
                 const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-                const dayIncs = records.filter(r => r.date === dateStr && r.type === 'income');
-                const dayExps = records.filter(r => r.date === dateStr && r.type === 'expense');
+                const hasInc = records.some(r => r.date === dateStr && r.type === 'income');
+                const hasExp = records.some(r => r.date === dateStr && r.type === 'expense');
 
                 const dayEl = document.createElement('div');
-                dayEl.className = `day ${dayIncs.length ? 'has-inc' : ''} ${dayExps.length ? 'has-exp' : ''}`;
-                
-                let dots = '';
-                if(dayIncs.length) dots += '<div class="dot-inc"></div>';
-                if(dayExps.length) dots += '<div class="dot-exp"></div>';
-                
-                dayEl.innerHTML = `<span>${i}</span>${dots}`;
+                dayEl.className = `day ${hasInc ? 'has-inc' : ''} ${hasExp ? 'has-exp' : ''}`;
+                dayEl.innerHTML = `<span>${i}</span>` + (hasInc ? '<div class="dot-inc"></div>' : '') + (hasExp ? '<div class="dot-exp"></div>' : '');
                 dayEl.onclick = () => showDailySlip(dateStr);
                 grid.appendChild(dayEl);
             }
@@ -164,26 +152,21 @@
             document.getElementById('slipTypeTitle').innerText = "DAILY SLIP";
             document.getElementById('slipDateRange').innerText = "ရက်စွဲ: " + date;
             
-            let html = '<div style="margin-bottom:10px;"><b>💰 ဝင်ငွေ</b></div>';
-            let totalInc = 0;
+            let html = '<div><b>💰 ဝင်ငွေ</b></div>';
+            let tInc = 0;
             incs.forEach(r => {
-                const d = r.details || { h: 8, o: 0, b: 0, e: 0 };
-                totalInc += r.amt;
-                html += `<div class="slip-row"><span>အလုပ်ချိန် (${d.h} နာရီ)</span> <span>${Math.round((d.h/8)*profile.wage)}฿</span></div>`;
-                if(d.o > 0) html += `<div class="slip-row"><span>OT (${d.o} နာရီ)</span> <span>${Math.round(d.o*profile.ot)}฿</span></div>`;
-                if(d.b > 0) html += `<div class="slip-row"><span>ရက်မှန်ကြေး</span> <span>${d.b}฿</span></div>`;
-                if(d.e > 0) html += `<div class="slip-row"><span>အပိုဝင်ငွေ</span> <span>${d.e}฿</span></div>`;
+                tInc += r.amt;
+                html += `<div class="slip-row"><span>${r.category || 'လုပ်အားခ'}</span> <span>${r.amt}฿</span></div>`;
             });
-
-            html += '<div style="margin: 10px 0; border-top:1px solid #eee; padding-top:10px;"><b>💸 ထွက်ငွေ</b></div>';
-            let totalExp = 0;
+            html += '<div style="margin-top:10px;"><b>💸 ထွက်ငွေ</b></div>';
+            let tExp = 0;
             exps.forEach(r => {
-                totalExp += r.amt;
-                html += `<div class="slip-row"><span>${r.category}</span> <span style="color:red;">-${Math.round(r.amt)}฿</span></div>`;
+                tExp += r.amt;
+                html += `<div class="slip-row"><span>${r.category}</span> <span style="color:red;">-${r.amt}฿</span></div>`;
             });
 
             document.getElementById('slipContent').innerHTML = html;
-            document.getElementById('slipTotal').innerText = Math.round(totalInc - totalExp) + "฿";
+            document.getElementById('slipTotal').innerText = (tInc - tExp) + "฿";
             document.getElementById('slipModal').style.display = 'flex';
         }
 
@@ -193,35 +176,22 @@
             if(!start || !end) return alert("ရက်စွဲ စ/ဆုံး ရွေးပေးပါ");
 
             const rangeRecs = records.filter(r => r.date >= start && r.date <= end);
-            if(!rangeRecs.length) return alert("ရွေးချယ်ထားသော ရက်စွဲအတွင်း မှတ်တမ်းမရှိပါ");
+            if(!rangeRecs.length) return alert("မှတ်တမ်းမရှိပါ");
 
-            document.getElementById('slipTypeTitle').innerText = "15-DAYS PAY SLIP";
+            document.getElementById('slipTypeTitle').innerText = "RANGE PAY SLIP";
             document.getElementById('slipDateRange').innerText = `${start} မှ ${end}`;
 
-            let tWork = 0, tOt = 0, tBonus = 0, tExtra = 0, tExp = 0, workDays = 0;
+            let tInc = 0, tExp = 0;
             rangeRecs.forEach(r => {
-                if(r.type === 'income') {
-                    const d = r.details || { h: 8, o: 0, b: 0, e: 0 };
-                    tWork += (d.h/8)*profile.wage;
-                    tOt += d.o * profile.ot;
-                    tBonus += d.b;
-                    tExtra += d.e;
-                    workDays++;
-                } else {
-                    tExp += r.amt;
-                }
+                if(r.type === 'income') tInc += r.amt;
+                else tExp += r.amt;
             });
 
-            let html = `
-                <div class="slip-row"><span>အလုပ်ဆင်းရက်</span> <span>${workDays} ရက်</span></div>
-                <div class="slip-row"><span>အခြေခံလုပ်အားခစုစုပေါင်း</span> <span>${Math.round(tWork)}฿</span></div>
-                <div class="slip-row"><span>OT စုစုပေါင်း</span> <span>${Math.round(tOt)}฿</span></div>
-                <div class="slip-row"><span>ရက်မှန်ကြေး/အပိုဝင်ငွေ</span> <span>${Math.round(tBonus + tExtra)}฿</span></div>
-                <div class="slip-row" style="color:red;"><span>ထွက်ငွေစုစုပေါင်း</span> <span>-${Math.round(tExp)}฿</span></div>
+            document.getElementById('slipContent').innerHTML = `
+                <div class="slip-row"><span>စုစုပေါင်းဝင်ငွေ</span> <span>${tInc}฿</span></div>
+                <div class="slip-row" style="color:red;"><span>စုစုပေါင်းထွက်ငွေ</span> <span>-${tExp}฿</span></div>
             `;
-
-            document.getElementById('slipContent').innerHTML = html;
-            document.getElementById('slipTotal').innerText = Math.round((tWork + tOt + tBonus + tExtra) - tExp) + "฿";
+            document.getElementById('slipTotal').innerText = (tInc - tExp) + "฿";
             document.getElementById('slipModal').style.display = 'flex';
         }
 
