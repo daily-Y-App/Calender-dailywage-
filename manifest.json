@@ -1,0 +1,15 @@
+{
+  "name": "Work Calendar",
+  "short_name": "WorkCal",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f4f7f6",
+  "theme_color": "#1a2a6c",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2371/2371131.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
