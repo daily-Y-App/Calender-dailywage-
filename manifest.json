@@ -1,13 +1,20 @@
 {
-  "name": "Work Calendar",
-  "short_name": "WorkCal",
-  "start_url": ".",
+  "name": "Daily Wage & Slip Tracker",
+  "short_name": "WageApp",
+  "description": "Daily income, expense tracker and 15-days payment slip generator.",
+  "start_url": "index.html",
   "display": "standalone",
-  "background_color": "#f4f7f6",
-  "theme_color": "#1a2a6c",
+  "background_color": "#1a2a6c",
+  "theme_color": "#b21f1f",
+  "orientation": "portrait",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/2371/2371131.png",
+      "src": "https://cdn-icons-png.flaticon.com/512/2341/2341634.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2341/2341634.png",
       "sizes": "512x512",
       "type": "image/png"
     }
