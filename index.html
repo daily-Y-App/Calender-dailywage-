@@ -11,8 +11,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-        /* မူလ Style များအတိုင်းထားရှိပါသည် */
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background: #f4f7f6; color: #333; padding-bottom: 30px; }
         .header { background: linear-gradient(135deg, #1a2a6c, #b21f1f); color: white; padding: 20px; text-align: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
         .calendar-container { padding: 10px; }
@@ -24,11 +23,13 @@
         .day.has-exp { border-bottom: 3px solid #ffcdd2; }
         .dot-inc { width: 5px; height: 5px; background: #4CAF50; border-radius: 50%; margin-top: 2px; }
         .dot-exp { width: 5px; height: 5px; background: #f44336; border-radius: 50%; margin-top: 2px; }
+        
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center; padding: 15px; overflow-y: auto; }
         .slip-card { background: white; width: 100%; max-width: 360px; border-radius: 15px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
         .slip-title { text-align: center; border-bottom: 2px dashed #ddd; padding-bottom: 10px; margin-bottom: 15px; }
         .slip-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; align-items: center; }
         .total-row { border-top: 2px solid #333; margin-top: 10px; padding-top: 10px; font-weight: bold; font-size: 18px; color: #b21f1f; }
+        
         .range-selector { background: white; margin: 10px; padding: 15px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center; }
         .btn { padding: 12px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; color: white; transition: 0.3s; }
         .btn-main { background: #1a2a6c; width: 100%; margin-top: 10px; }
@@ -80,23 +81,20 @@
                 </div>
             </div>
             <div class="btn-group">
-                <button class="btn btn-share" onclick="shareSlip()">📲 Share</button>
+                <button class="btn btn-share" onclick="shareSlip()">📲 Share Image</button>
                 <button class="btn btn-close" onclick="closeModal()">ပိတ်မည်</button>
             </div>
         </div>
     </div>
 
     <script>
-        // --- PWA Service Worker Registration (ဒါလေးမပါလို့ မရတာပါ) ---
+        // Service Worker မှတ်ပုံတင်ခြင်း
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(reg => console.log('Service Worker Registered'))
-                    .catch(err => console.log('Service Worker Failed', err));
+                navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW failed', err));
             });
         }
 
-        // --- မူလ Logic များ (Data အဟောင်းများအတိုင်း) ---
         let records = JSON.parse(localStorage.getItem('f_recs')) || [];
         let profile = JSON.parse(localStorage.getItem('f_prof')) || { name: 'User', code: 'EMP001', wage: 375, ot: 69 };
         let currentDate = new Date();
@@ -131,11 +129,7 @@
 
                 const dayEl = document.createElement('div');
                 dayEl.className = `day ${dayIncs.length ? 'has-inc' : ''} ${dayExps.length ? 'has-exp' : ''}`;
-                
-                let dots = '';
-                if(dayIncs.length) dots += '<div class="dot-inc"></div>';
-                if(dayExps.length) dots += '<div class="dot-exp"></div>';
-                
+                let dots = (dayIncs.length ? '<div class="dot-inc"></div>' : '') + (dayExps.length ? '<div class="dot-exp"></div>' : '');
                 dayEl.innerHTML = `<span>${i}</span>${dots}`;
                 dayEl.onclick = () => showDailySlip(dateStr);
                 grid.appendChild(dayEl);
@@ -176,7 +170,7 @@
         function generateRangeSlip() {
             const start = document.getElementById('startDate').value;
             const end = document.getElementById('endDate').value;
-            if(!start || !end) return alert("ရက်စွဲ စ/ဆုံး ရွေးပေးပါ");
+            if(!start || !end) return alert("ရက်စွဲ ရွေးပေးပါ");
 
             const rangeRecs = records.filter(r => r.date >= start && r.date <= end);
             if(!rangeRecs.length) return alert("မှတ်တမ်းမရှိပါ");
@@ -193,19 +187,16 @@
                     tBonus += d.b;
                     tExtra += d.e;
                     workDays++;
-                } else {
-                    tExp += r.amt;
-                }
+                } else { tExp += r.amt; }
             });
 
-            let html = `
+            document.getElementById('slipContent').innerHTML = `
                 <div class="slip-row"><span>အလုပ်ဆင်းရက်</span> <span>${workDays} ရက်</span></div>
-                <div class="slip-row"><span>အခြေခံလုပ်အားခစုစုပေါင်း</span> <span>${Math.round(tWork)}฿</span></div>
+                <div class="slip-row"><span>အခြေခံလုပ်အားခ</span> <span>${Math.round(tWork)}฿</span></div>
                 <div class="slip-row"><span>OT စုစုပေါင်း</span> <span>${Math.round(tOt)}฿</span></div>
-                <div class="slip-row"><span>ရက်မှန်ကြေး/အပိုဝင်ငွေ</span> <span>${Math.round(tBonus + tExtra)}฿</span></div>
+                <div class="slip-row"><span>ရက်မှန်ကြေး/အပို</span> <span>${Math.round(tBonus + tExtra)}฿</span></div>
                 <div class="slip-row" style="color:red;"><span>ထွက်ငွေစုစုပေါင်း</span> <span>-${Math.round(tExp)}฿</span></div>
             `;
-            document.getElementById('slipContent').innerHTML = html;
             document.getElementById('slipTotal').innerText = Math.round((tWork + tOt + tBonus + tExtra) - tExp) + "฿";
             document.getElementById('slipModal').style.display = 'flex';
         }
@@ -213,18 +204,35 @@
         function changeMonth(step) { currentDate.setMonth(currentDate.getMonth() + step); renderCalendar(); }
         function closeModal() { document.getElementById('slipModal').style.display = 'none'; }
 
+        // **အဆင့်မြှင့်တင်ထားသော Share Function**
         async function shareSlip() {
             const area = document.getElementById('capture-area');
-            const canvas = await html2canvas(area, { scale: 2 });
-            canvas.toBlob(blob => {
+            const canvas = await html2canvas(area, { scale: 2, useCORS: true });
+            
+            canvas.toBlob(async (blob) => {
                 const file = new File([blob], 'slip.png', { type: 'image/png' });
-                if (navigator.share) navigator.share({ files: [file], title: 'Pay Slip' });
-                else {
-                    const link = document.createElement('a'); link.download = 'slip.png';
-                    link.href = canvas.toDataURL(); link.click();
+                
+                // Navigator Share ကို Appyet က ခွင့်မပြုပါက Download အဖြစ် ပြောင်းလဲပေးမည်
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    try {
+                        await navigator.share({ files: [file], title: 'Pay Slip' });
+                    } catch (e) {
+                        saveImage(canvas);
+                    }
+                } else {
+                    saveImage(canvas);
                 }
-            });
+            }, 'image/png');
         }
+
+        function saveImage(canvas) {
+            const link = document.createElement('a');
+            link.download = 'slip.png';
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+            alert("စလစ်ကို ပုံအဖြစ် ဖုန်းထဲသို့ သိမ်းဆည်းလိုက်ပါသည်။ Gallery ထဲတွင် သွားကြည့်နိုင်ပါသည်။");
+        }
+
         init();
     </script>
 </body>
