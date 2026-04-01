@@ -6,8 +6,10 @@
     <title>Work Calendar & Dynamic Slip</title>
     
     <meta name="theme-color" content="#1a2a6c">
-    <link rel="manifest" href="./manifest.json">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background: #f4f7f6; color: #333; padding-bottom: 30px; }
@@ -86,28 +88,54 @@
     </div>
 
     <script>
+        // Firebase Config (Home Page နဲ့ တူရပါမယ်)
+        const firebaseConfig = {
+            apiKey: "AIzaSyD7T7WZg0fLGTw6ShqDHjOva-btNF6O1AM",
+            databaseURL: "https://seafood-oder-default-rtdb.firebaseio.com",
+            projectId: "seafood-oder",
+            storageBucket: "seafood-oder.firebasestorage.app",
+            messagingSenderId: "428949391732",
+            appId: "1:428949391732:web:6aa0a31a4f4ba33765c421"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
         let records = JSON.parse(localStorage.getItem('f_recs')) || [];
         let profile = JSON.parse(localStorage.getItem('f_prof')) || { name: 'User', code: 'EMP001', wage: 375, ot: 69 };
         let currentDate = new Date();
 
         window.onload = () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const incomingData = urlParams.get('data');
-            if (incomingData) {
-                try {
-                    const decodedData = decodeURIComponent(escape(atob(incomingData)));
-                    localStorage.setItem('f_recs', decodedData);
-                    window.history.replaceState({}, document.title, window.location.pathname);
-                    location.reload();
-                } catch (e) { console.error("Sync error", e); }
-            }
             init();
+            syncData(); // Firebase ကနေ Data ဆွဲမယ်
         };
 
         function init() {
             document.getElementById('userName').innerText = profile.name;
             document.getElementById('userCode').innerText = "CODE: " + profile.code;
             renderCalendar();
+        }
+
+        // --- Data ချိတ်ဆက်ပေးမည့် အပိုင်း ---
+        function syncData() {
+            if(!profile.code) return;
+            
+            // Firebase ကနေ Record တွေရော Profile ပါ ပြန်ဖတ်မယ်
+            db.ref('users/' + profile.code).on('value', (snap) => {
+                const data = snap.val();
+                if(data) {
+                    if(data.records) {
+                        records = Object.values(data.records);
+                        localStorage.setItem('f_recs', JSON.stringify(records));
+                    }
+                    if(data.profile) {
+                        profile = data.profile;
+                        localStorage.setItem('f_prof', JSON.stringify(profile));
+                        document.getElementById('userName').innerText = profile.name;
+                        document.getElementById('userCode').innerText = "CODE: " + profile.code;
+                    }
+                    renderCalendar(); // Calendar ကို ပြန်ဆွဲမယ်
+                }
+            });
         }
 
         function renderCalendar() {
@@ -176,30 +204,19 @@
         function changeMonth(step) { currentDate.setMonth(currentDate.getMonth() + step); renderCalendar(); }
         function closeModal() { document.getElementById('slipModal').style.display = 'none'; }
 
-        // --- အလုပ်မရှုပ်စေဘဲ တိုက်ရိုက်သိမ်းဆည်းမည့် Function ---
         async function directDownload() {
             const area = document.getElementById('capture-area');
             const canvas = await html2canvas(area, { scale: 3, useCORS: true, backgroundColor: "#ffffff" });
-            
-            try {
-                // ပုံကို Blob အဖြစ်ပြောင်းလဲခြင်း
-                canvas.toBlob((blob) => {
-                    const url = URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = `pay-slip-${Date.now()}.png`; // ပုံအမည်
-                    document.body.appendChild(link);
-                    link.click(); // တိုက်ရိုက်နှိပ်ပြီး သိမ်းဆည်းခြင်း
-                    document.body.removeChild(link);
-                    URL.revokeObjectURL(url);
-                    alert("စလစ်ကို ပုံအဖြစ် သိမ်းဆည်းလိုက်ပါသည်။ Gallery ထဲတွင် ကြည့်နိုင်ပါသည်။");
-                }, 'image/png');
-            } catch (err) {
-                // အကယ်၍ Webview က link.click() ကို ပိတ်ထားပါက မူလနည်းလမ်း (Window အသစ်) ဖြင့် ပြပေးမည်
-                const dataUrl = canvas.toDataURL("image/png");
-                const win = window.open();
-                win.document.write('<img src="' + dataUrl + '" style="width:100%;">');
-            }
+            canvas.toBlob((blob) => {
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `pay-slip-${Date.now()}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }, 'image/png');
         }
 
         async function directShare() {
@@ -208,14 +225,8 @@
             canvas.toBlob(async (blob) => {
                 const file = new File([blob], 'slip.png', { type: 'image/png' });
                 if (navigator.share && navigator.canShare({ files: [file] })) {
-                    try { 
-                        await navigator.share({ files: [file], title: 'Pay Slip' }); 
-                    } catch (err) { 
-                        directDownload(); 
-                    }
-                } else { 
-                    directDownload(); 
-                }
+                    try { await navigator.share({ files: [file], title: 'Pay Slip' }); } catch (err) { directDownload(); }
+                } else { directDownload(); }
             });
         }
     </script>
