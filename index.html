@@ -5,91 +5,140 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Work Calendar & Dynamic Slip</title>
     
-    <meta name="theme-color" content="#1a2a6c">
+    <meta name="theme-color" content="#1e3a8a">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Padauk:wght@400;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background: #f4f7f6; color: #333; padding-bottom: 30px; }
-        .header { background: linear-gradient(135deg, #1a2a6c, #b21f1f); color: white; padding: 20px; text-align: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
-        .calendar-container { padding: 10px; }
-        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: white; padding: 12px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
-        .day-name { text-align: center; font-weight: bold; font-size: 12px; color: #777; padding: 5px 0; }
-        .day { background: white; aspect-ratio: 1/1; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 14px; position: relative; border: 1px solid #eee; cursor: pointer; }
-        .day.has-inc { background: #e8f5e9; }
-        .day.has-exp { border-bottom: 3px solid #ffcdd2; }
-        .dot-inc { width: 5px; height: 5px; background: #4CAF50; border-radius: 50%; margin-top: 2px; }
-        .dot-exp { width: 5px; height: 5px; background: #f44336; border-radius: 50%; margin-top: 2px; }
+        body {
+            font-family: 'Inter', 'Padauk', sans-serif;
+            background-color: #f3f4f6; /* bg-gray-100 */
+            -webkit-tap-highlight-color: transparent;
+        }
         
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center; padding: 15px; overflow-y: auto; }
-        .slip-card { background: white; width: 100%; max-width: 360px; border-radius: 15px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
-        .slip-title { text-align: center; border-bottom: 2px dashed #ddd; padding-bottom: 15px; margin-bottom: 15px; }
-        .slip-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px; align-items: center; }
-        .total-row { border-top: 2px solid #333; margin-top: 10px; padding-top: 15px; font-weight: bold; font-size: 18px; color: #b21f1f; }
-        
-        .range-selector { background: white; margin: 10px; padding: 15px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center; }
-        .btn { padding: 12px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; color: white; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-main { background: #1a2a6c; width: 100%; margin-top: 10px; }
-        .btn-save { background: #007bff; flex: 1; }
-        .btn-share { background: #25D366; flex: 1; }
-        .btn-close { background: #666; width: 100%; margin-top: 10px; }
-        .btn-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; width: 100%; max-width: 360px; }
+        /* Custom Scrollbar for Modal */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
+
+        /* Calendar Dots */
+        .dot-inc { width: 6px; height: 6px; background-color: #22c55e; border-radius: 50%; margin-top: 4px; box-shadow: 0 0 5px rgba(34, 197, 94, 0.5); }
+        .dot-exp { width: 6px; height: 6px; background-color: #ef4444; border-radius: 50%; margin-top: 4px; box-shadow: 0 0 5px rgba(239, 68, 68, 0.5); }
     </style>
 </head>
-<body>
+<body class="pb-10 text-gray-800">
 
-    <div class="header">
-    <div style="text-align: center; margin-top: 10px;"><a href="battle-wage.html" class="btn btn-main" style="text-decoration: none; display: inline-flex; width: auto; padding: 8px 15px;">⚔️ Battle Wage</a></div>
-        <h2 id="userName">User Name</h2>
-        <p id="userCode" style="font-size: 12px; opacity: 0.8;">CODE: EMP001</p>
-    </div>
+    <div class="max-w-md mx-auto bg-white min-h-screen shadow-2xl relative">
 
-    <div class="range-selector">
-        <p style="font-size: 13px; font-weight: bold; color: #555;">📅 ရက်စွဲရွေးချယ်ပြီး စလစ်ထုတ်ရန်</p>
-        <div style="display: flex; gap: 5px; margin-top: 10px;">
-            <input type="date" id="startDate" style="flex:1; padding: 8px; border-radius: 5px; border:1px solid #ddd;">
-            <span style="align-self: center;">မှ</span>
-            <input type="date" id="endDate" style="flex:1; padding: 8px; border-radius: 5px; border:1px solid #ddd;">
-        </div>
-        <button class="btn btn-main" onclick="generateRangeSlip()">🧾 စလစ်ထုတ်မည်</button>
-    </div>
-
-    <div class="calendar-container">
-        <div class="calendar-header">
-            <button onclick="changeMonth(-1)" style="border:none; background:none; font-size:20px;">❮</button>
-            <h3 id="monthDisplay">Month Year</h3>
-            <button onclick="changeMonth(1)" style="border:none; background:none; font-size:20px;">❯</button>
-        </div>
-        <div class="grid" id="calendarGrid"></div>
-    </div>
-
-    <div id="slipModal" class="modal">
-        <div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
-            <div id="capture-area" class="slip-card">
-                <div class="slip-title">
-                    <h2 id="slipTypeTitle">PAY SLIP</h2>
-                    <p id="slipDateRange" style="font-size: 12px; color: #666; margin-top: 5px;"></p>
+        <header class="bg-gradient-to-r from-blue-900 to-indigo-800 text-white p-5 rounded-b-3xl shadow-lg sticky top-0 z-40">
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <h2 id="userName" class="text-xl font-bold tracking-wide">Loading...</h2>
+                    <p id="userCode" class="text-xs text-blue-200 mt-1 bg-white/20 inline-block px-2 py-1 rounded-md">CODE: ---</p>
                 </div>
-                <div id="slipContent"></div>
-                <div class="slip-row total-row">
-                    <span>အသားတင်ရငွေ</span>
-                    <span id="slipTotal">0฿</span>
+                <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                    <i class="fa-solid fa-user text-xl"></i>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 mt-4">
+                <a href="https://daily-y-app.github.io/Dailywage-/" class="bg-white/10 hover:bg-white/20 transition-all border border-white/30 text-center py-2.5 rounded-xl text-sm font-semibold backdrop-blur-md flex items-center justify-center gap-2 shadow-sm">
+                    <i class="fa-solid fa-home text-blue-300"></i> Home
+                </a>
+                <a href="https://daily-y-app.github.io/Battle-wage/" class="bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 transition-all border border-red-400 text-center py-2.5 rounded-xl text-sm font-semibold shadow-md flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-fire text-yellow-300"></i> Battle
+                </a>
+            </div>
+        </header>
+
+        <main class="p-4 space-y-6">
+
+            <div class="bg-white rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] p-5 border border-gray-100">
+                <div class="flex items-center gap-2 mb-4 text-gray-700">
+                    <i class="fa-regular fa-calendar-check text-indigo-600 text-lg"></i>
+                    <p class="text-sm font-bold">ရက်စွဲရွေးချယ်ပြီး စလစ်ထုတ်ရန်</p>
+                </div>
+                
+                <div class="flex items-center gap-2 mb-4">
+                    <input type="date" id="startDate" class="flex-1 p-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all">
+                    <span class="text-gray-400 text-sm font-medium">မှ</span>
+                    <input type="date" id="endDate" class="flex-1 p-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all">
+                </div>
+                
+                <button onclick="generateRangeSlip()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 active:scale-95">
+                    <i class="fa-solid fa-receipt"></i> စလစ်ထုတ်မည်
+                </button>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] p-4 border border-gray-100">
+                <div class="flex justify-between items-center mb-4 bg-gray-50 p-2 rounded-xl">
+                    <button onclick="changeMonth(-1)" class="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
+                        <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+                    <h3 id="monthDisplay" class="font-bold text-gray-700 tracking-wide">Month Year</h3>
+                    <button onclick="changeMonth(1)" class="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-7 gap-1.5" id="calendarGrid">
+                    </div>
+            </div>
+
+        </main>
+    </div>
+
+    <div id="slipModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        
+        <div class="w-full max-w-sm flex flex-col items-center animate-[fadeIn_0.3s_ease-in-out]">
+            <div id="capture-area" class="bg-white w-full rounded-2xl p-6 shadow-2xl relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
+                
+                <div class="text-center border-b border-dashed border-gray-300 pb-4 mb-4 mt-2">
+                    <h2 id="slipTypeTitle" class="text-xl font-black text-gray-800 tracking-widest">PAY SLIP</h2>
+                    <p id="slipDateRange" class="text-xs text-gray-500 mt-1 font-medium"></p>
+                </div>
+                
+                <div id="slipContent" class="space-y-2 text-sm text-gray-700">
+                    </div>
+                
+                <div class="border-t-2 border-gray-800 mt-4 pt-4 flex justify-between items-center font-bold">
+                    <span class="text-gray-800">အသားတင်ရငွေ</span>
+                    <span id="slipTotal" class="text-xl text-indigo-700">0฿</span>
                 </div>
             </div>
             
-            <div class="btn-group">
-                <button class="btn btn-save" onclick="directDownload()">💾 သိမ်းမည်</button>
-                <button class="btn btn-share" onclick="directShare()">📲 Share</button>
-                <button class="btn btn-close" onclick="closeModal()">ပိတ်မည်</button>
+            <div class="grid grid-cols-2 gap-3 w-full mt-5">
+                <button onclick="directDownload()" class="bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-download"></i> သိမ်းမည်
+                </button>
+                <button onclick="directShare()" class="bg-green-500 hover:bg-green-600 text-white py-3 rounded-xl font-bold shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-share-nodes"></i> Share
+                </button>
+                <button onclick="closeModal()" class="col-span-2 bg-gray-200 hover:bg-gray-300 text-gray-700 py-3 rounded-xl font-bold transition-all active:scale-95 mt-1">
+                    ပိတ်မည်
+                </button>
             </div>
         </div>
     </div>
 
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+    </style>
+
     <script>
-        // Firebase Config (Home Page နဲ့ တူရပါမယ်)
+        // မူလ Firebase Config (Data ဖတ်စနစ် မပျက်စေရန် အတိအကျထားရှိပါသည်)
         const firebaseConfig = {
             apiKey: "AIzaSyD7T7WZg0fLGTw6ShqDHjOva-btNF6O1AM",
             databaseURL: "https://seafood-oder-default-rtdb.firebaseio.com",
@@ -98,16 +147,21 @@
             messagingSenderId: "428949391732",
             appId: "1:428949391732:web:6aa0a31a4f4ba33765c421"
         };
-        firebase.initializeApp(firebaseConfig);
+        
+        // Initialize Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
         const db = firebase.database();
 
+        // Local Storage မှ Data ဖတ်ခြင်း (Home page မှ ပေါင်းနုတ်ထားသည်များကို ဖတ်ရန်)
         let records = JSON.parse(localStorage.getItem('f_recs')) || [];
         let profile = JSON.parse(localStorage.getItem('f_prof')) || { name: 'User', code: 'EMP001', wage: 375, ot: 69 };
         let currentDate = new Date();
 
         window.onload = () => {
             init();
-            syncData(); // Firebase ကနေ Data ဆွဲမယ်
+            syncData(); // Firebase မှ Data လှမ်းဆွဲမည့် Function
         };
 
         function init() {
@@ -134,77 +188,146 @@
                         document.getElementById('userName').innerText = profile.name;
                         document.getElementById('userCode').innerText = "CODE: " + profile.code;
                     }
-                    renderCalendar(); // Calendar ကို ပြန်ဆွဲမယ်
+                    renderCalendar(); // Calendar ကို Update လုပ်မယ်
                 }
             });
         }
 
+        // ပြင်ဆင်ထားသော Calendar ရေးဆွဲသည့် Function (Tailwind Class များဖြင့်)
         function renderCalendar() {
             const grid = document.getElementById('calendarGrid');
             const monthDisplay = document.getElementById('monthDisplay');
             grid.innerHTML = "";
             const year = currentDate.getFullYear();
             const month = currentDate.getMonth();
+            
+            // လ နှင့် ခုနှစ် ပြသခြင်း
             monthDisplay.innerText = new Intl.DateTimeFormat('my-MM', { month: 'long', year: 'numeric' }).format(currentDate);
-            ['နေ', 'လာ', 'င်္ဂါ', 'ဗုဒ္ဓ', 'ကြာ', 'သော', 'စနေ'].forEach(d => grid.innerHTML += `<div class="day-name">${d}</div>`);
+            
+            // နေ့နာမည်များ
+            const daysOfWeek = ['နေ', 'လာ', 'င်္ဂါ', 'ဗုဒ္ဓ', 'ကြာ', 'သော', 'စနေ'];
+            daysOfWeek.forEach(d => {
+                grid.innerHTML += `<div class="text-center font-bold text-xs text-indigo-400 py-2">${d}</div>`;
+            });
+
             const firstDay = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
-            for (let i = 0; i < firstDay; i++) grid.innerHTML += `<div></div>`;
+            
+            // လအစ လွတ်နေသော နေရာများ
+            for (let i = 0; i < firstDay; i++) {
+                grid.innerHTML += `<div></div>`;
+            }
+
+            // နေ့ရက်များ
             for (let i = 1; i <= daysInMonth; i++) {
                 const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+                
+                // Data မှတ်တမ်းရှိမရှိ စစ်ဆေးခြင်း
                 const dayIncs = records.filter(r => r.date === dateStr && r.type === 'income');
                 const dayExps = records.filter(r => r.date === dateStr && r.type === 'expense');
+                
                 const dayEl = document.createElement('div');
-                dayEl.className = `day ${dayIncs.length ? 'has-inc' : ''} ${dayExps.length ? 'has-exp' : ''}`;
-                let dots = (dayIncs.length ? '<div class="dot-inc"></div>' : '') + (dayExps.length ? '<div class="dot-exp"></div>' : '');
-                dayEl.innerHTML = `<span>${i}</span>${dots}`;
+                
+                // Tailwind Classes များကို Data အပေါ်မူတည်၍ ထည့်သွင်းခြင်း
+                let baseClasses = "aspect-square flex flex-col items-center justify-center text-sm font-medium rounded-xl border border-gray-100 cursor-pointer transition-all hover:bg-indigo-50 relative ";
+                
+                if (dayIncs.length) baseClasses += "bg-green-50/50 ";
+                if (dayExps.length) baseClasses += "border-b-4 border-b-red-300 ";
+                if (!dayIncs.length && !dayExps.length) baseClasses += "bg-white ";
+
+                dayEl.className = baseClasses;
+
+                let dots = '';
+                if(dayIncs.length) dots += '<div class="dot-inc"></div>';
+                if(dayExps.length) dots += '<div class="dot-exp"></div>';
+                
+                // ယနေ့ ရက်စွဲကို ထင်ရှားစေရန်
+                const isToday = (new Date().toISOString().split('T')[0] === dateStr);
+                const textClass = isToday ? "text-white bg-indigo-600 w-6 h-6 rounded-full flex items-center justify-center" : "text-gray-700";
+
+                dayEl.innerHTML = `<span class="${textClass}">${i}</span><div class="flex gap-1 absolute bottom-1">${dots}</div>`;
+                
+                // နှိပ်လျှင် Slip ပြရန်
                 dayEl.onclick = () => showDailySlip(dateStr);
                 grid.appendChild(dayEl);
             }
         }
 
+        // Daily Slip ပြသခြင်း
         function showDailySlip(date) {
             const incs = records.filter(r => r.date === date && r.type === 'income');
             const exps = records.filter(r => r.date === date && r.type === 'expense');
-            if (!incs.length && !exps.length) return;
+            
+            if (!incs.length && !exps.length) return; // Data မရှိလျှင် မပြပါ
+            
             document.getElementById('slipTypeTitle').innerText = "DAILY SLIP";
             document.getElementById('slipDateRange').innerText = "ရက်စွဲ: " + date;
-            let html = '<div><b>💰 ဝင်ငွေ</b></div>';
+            
+            let html = '<div class="font-bold text-green-600 mb-2 mt-3"><i class="fa-solid fa-sack-dollar"></i> ဝင်ငွေ</div>';
             let totalInc = 0;
-            incs.forEach(r => { totalInc += r.amt; html += `<div class="slip-row"><span>လုပ်အားခ</span> <span>${Math.round(r.amt)}฿</span></div>`; });
-            html += '<div style="margin-top:10px;"><b>💸 ထွက်ငွေ</b></div>';
+            incs.forEach(r => { 
+                totalInc += r.amt; 
+                html += `<div class="flex justify-between py-1 border-b border-gray-100"><span>လုပ်အားခ</span> <span class="font-semibold">${Math.round(r.amt)}฿</span></div>`; 
+            });
+            
+            html += '<div class="font-bold text-red-500 mb-2 mt-4"><i class="fa-solid fa-money-bill-transfer"></i> ထွက်ငွေ</div>';
             let totalExp = 0;
-            exps.forEach(r => { totalExp += r.amt; html += `<div class="slip-row"><span>${r.category}</span> <span style="color:red;">-${Math.round(r.amt)}฿</span></div>`; });
+            exps.forEach(r => { 
+                totalExp += r.amt; 
+                html += `<div class="flex justify-between py-1 border-b border-gray-100"><span>${r.category}</span> <span class="text-red-500 font-semibold">-${Math.round(r.amt)}฿</span></div>`; 
+            });
+            
             document.getElementById('slipContent').innerHTML = html;
             document.getElementById('slipTotal').innerText = Math.round(totalInc - totalExp) + "฿";
-            document.getElementById('slipModal').style.display = 'flex';
+            
+            // Modal ဖွင့်ခြင်း (Tailwind class)
+            const modal = document.getElementById('slipModal');
+            modal.classList.remove('hidden');
         }
 
+        // Range Slip ပြသခြင်း
         function generateRangeSlip() {
             const start = document.getElementById('startDate').value;
             const end = document.getElementById('endDate').value;
-            if(!start || !end) return alert("ရက်စွဲ ရွေးပေးပါ");
+            
+            if(!start || !end) return alert("ကျေးဇူးပြု၍ ရက်စွဲ အစနှင့် အဆုံးကို ရွေးချယ်ပေးပါ။");
+            
             const d1 = new Date(start);
             const d2 = new Date(end);
             const diffDays = Math.ceil(Math.abs(d2 - d1) / (1000 * 60 * 60 * 24)) + 1;
+            
             const rangeRecs = records.filter(r => r.date >= start && r.date <= end);
-            if(!rangeRecs.length) return alert("မှတ်တမ်းမရှိပါ");
+            if(!rangeRecs.length) return alert("ရွေးချယ်ထားသော ရက်အတွင်း မှတ်တမ်းမရှိပါ။");
+            
             document.getElementById('slipTypeTitle').innerText = diffDays + "-DAYS PAY SLIP";
             document.getElementById('slipDateRange').innerText = `${start} မှ ${end}`;
+            
             let tInc = 0, tExp = 0;
             rangeRecs.forEach(r => { if(r.type === 'income') tInc += r.amt; else tExp += r.amt; });
+            
             document.getElementById('slipContent').innerHTML = `
-                <div class="slip-row"><span>စုစုပေါင်းရက်</span> <span>${diffDays} ရက်</span></div>
-                <div class="slip-row"><span>စုစုပေါင်းဝင်ငွေ</span> <span>${Math.round(tInc)}฿</span></div>
-                <div class="slip-row" style="color:red;"><span>စုစုပေါင်းထွက်ငွေ</span> <span>-${Math.round(tExp)}฿</span></div>
+                <div class="flex justify-between py-2 border-b border-gray-100"><span class="text-gray-500">စုစုပေါင်းလုပ်ရက်</span> <span class="font-semibold">${diffDays} ရက်</span></div>
+                <div class="flex justify-between py-2 border-b border-gray-100"><span class="text-gray-500">စုစုပေါင်းဝင်ငွေ</span> <span class="font-semibold text-green-600">${Math.round(tInc)}฿</span></div>
+                <div class="flex justify-between py-2 border-b border-gray-100"><span class="text-gray-500">စုစုပေါင်းထွက်ငွေ</span> <span class="font-semibold text-red-500">-${Math.round(tExp)}฿</span></div>
             `;
             document.getElementById('slipTotal').innerText = Math.round(tInc - tExp) + "฿";
-            document.getElementById('slipModal').style.display = 'flex';
+            
+            const modal = document.getElementById('slipModal');
+            modal.classList.remove('hidden');
         }
 
-        function changeMonth(step) { currentDate.setMonth(currentDate.getMonth() + step); renderCalendar(); }
-        function closeModal() { document.getElementById('slipModal').style.display = 'none'; }
+        // လပြောင်းခြင်း
+        function changeMonth(step) { 
+            currentDate.setMonth(currentDate.getMonth() + step); 
+            renderCalendar(); 
+        }
+        
+        // Modal ပိတ်ခြင်း
+        function closeModal() { 
+            document.getElementById('slipModal').classList.add('hidden'); 
+        }
 
+        // Slip ကို Image အဖြစ် ဒေါင်းလုဒ်ဆွဲခြင်း
         async function directDownload() {
             const area = document.getElementById('capture-area');
             const canvas = await html2canvas(area, { scale: 3, useCORS: true, backgroundColor: "#ffffff" });
@@ -220,6 +343,7 @@
             }, 'image/png');
         }
 
+        // Slip ကို Share ခြင်း
         async function directShare() {
             const area = document.getElementById('capture-area');
             const canvas = await html2canvas(area, { scale: 3, useCORS: true, backgroundColor: "#ffffff" });
@@ -233,4 +357,3 @@
     </script>
 </body>
 </html>
-
