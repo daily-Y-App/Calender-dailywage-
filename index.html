@@ -40,17 +40,17 @@
 
         <!-- Header with purple-to-red gradient matching screenshot -->
         <header class="bg-gradient-to-r from-purple-900 via-purple-800 to-red-700 text-white p-5 rounded-b-3xl shadow-lg sticky top-0 z-40">
-            <div class="flex justify-between items-center mb-4">
+            <div class="flex justify-between items-center mb-3">
                 <div>
-                    <h2 id="userName" class="text-xl font-bold tracking-wide">Loading...</h2>
-                    <p id="userCode" class="text-xs text-purple-200 mt-1 bg-white/20 inline-block px-2 py-1 rounded-md">CODE: ---</p>
+                    <h2 id="userName" class="text-lg font-bold tracking-wide">Loading...</h2>
+                    <p id="userCode" class="text-[11px] text-purple-200 mt-1 bg-white/20 inline-block px-2 py-0.5 rounded-md">CODE: ---</p>
                 </div>
                 <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
                     <i class="fa-solid fa-user text-xl"></i>
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-3 mt-4">
+            <div class="grid grid-cols-2 gap-2 mt-3">
                 <a href="https://daily-y-app.github.io/Dailywage-/" class="bg-white/10 hover:bg-white/20 transition-all border border-white/30 text-center py-2.5 rounded-xl text-sm font-semibold backdrop-blur-md flex items-center justify-center gap-2 shadow-sm">
                     <i class="fa-solid fa-home text-purple-300"></i> Home
                 </a>
@@ -60,10 +60,25 @@
             </div>
         </header>
 
-        <main class="p-4 space-y-6">
+        <main class="p-3 space-y-4">
 
-            <div class="bg-white rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] p-5 border border-gray-100">
-                <div class="flex items-center gap-2 mb-4 text-gray-700">
+            <section class="grid grid-cols-3 gap-2" aria-label="ယနေ့အကျဉ်းချုပ်">
+                <div class="rounded-xl bg-green-50 border border-green-100 p-2.5">
+                    <p class="text-[10px] text-green-700 font-semibold">ယနေ့ဝင်ငွေ</p>
+                    <p id="todayIncome" class="text-sm font-black text-green-700 mt-1">0฿</p>
+                </div>
+                <div class="rounded-xl bg-red-50 border border-red-100 p-2.5">
+                    <p class="text-[10px] text-red-700 font-semibold">ယနေ့ထွက်ငွေ</p>
+                    <p id="todayExpense" class="text-sm font-black text-red-700 mt-1">0฿</p>
+                </div>
+                <div class="rounded-xl bg-purple-50 border border-purple-100 p-2.5">
+                    <p class="text-[10px] text-purple-700 font-semibold">ယနေ့ကျန်ငွေ</p>
+                    <p id="todayBalance" class="text-sm font-black text-purple-700 mt-1">0฿</p>
+                </div>
+            </section>
+
+            <div class="bg-white rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] p-4 border border-gray-100">
+                <div class="flex items-center gap-2 mb-3 text-gray-700">
                     <i class="fa-regular fa-calendar-check text-purple-600 text-lg"></i>
                     <p class="text-sm font-bold">ရက်စွဲရွေးချယ်ပြီး စလစ်ထုတ်ရန်</p>
                 </div>
@@ -80,7 +95,7 @@
                 </button>
             </div>
 
-            <div class="bg-white rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] p-4 border border-gray-100">
+            <div class="bg-white rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] p-3 border border-gray-100">
                 <div class="flex justify-between items-center mb-4 bg-gray-50 p-2 rounded-xl">
                     <button onclick="changeMonth(-1)" class="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors">
                         <i class="fa-solid fa-chevron-left"></i>
@@ -171,7 +186,35 @@
         function init() {
             document.getElementById('userName').innerText = profile.name;
             document.getElementById('userCode').innerText = "CODE: " + profile.code;
+            renderTodaySummary();
             renderCalendar();
+        }
+
+        // Home page မှ record category မတူတာများကို ခွဲပြရန် standard label ပြန်သတ်မှတ်ခြင်း
+        function recordLabel(record) {
+            const raw = String(record.category || record.name || '').toLowerCase();
+            if (record.kind === 'ot' || raw.includes('ot') || raw.includes('အချိန်ပို') || raw.includes('overtime')) return 'OT';
+            if (record.kind === 'daily_wage' || raw.includes('နေ့စား') || raw.includes('daily wage') || raw.includes('နေ့စားခ')) return 'နေ့စားခ';
+            return record.category || record.name || (record.type === 'income' ? 'အခြားဝင်ငွေ' : 'အခြားထွက်ငွေ');
+        }
+
+        function recordAmount(record) {
+            return Number(record.amt ?? record.amount ?? record.value ?? 0) || 0;
+        }
+
+        function dateKey(date) {
+            const d = new Date(date);
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+
+        function renderTodaySummary() {
+            const today = dateKey(new Date());
+            const todayRecords = records.filter(r => r.date === today);
+            const income = todayRecords.filter(r => r.type === 'income').reduce((sum, r) => sum + recordAmount(r), 0);
+            const expense = todayRecords.filter(r => r.type === 'expense').reduce((sum, r) => sum + recordAmount(r), 0);
+            document.getElementById('todayIncome').innerText = `${Math.round(income)}฿`;
+            document.getElementById('todayExpense').innerText = `${Math.round(expense)}฿`;
+            document.getElementById('todayBalance').innerText = `${Math.round(income - expense)}฿`;
         }
 
         // --- Data ချိတ်ဆက်ပေးမည့် အပိုင်း ---
@@ -192,6 +235,7 @@
                         document.getElementById('userName').innerText = profile.name;
                         document.getElementById('userCode').innerText = "CODE: " + profile.code;
                     }
+                    renderTodaySummary();
                     renderCalendar(); // Calendar ကို Update လုပ်မယ်
                 }
             });
@@ -269,16 +313,20 @@
             
             let html = '<div class="font-bold text-green-600 mb-2 mt-3"><i class="fa-solid fa-sack-dollar"></i> ဝင်ငွေ</div>';
             let totalInc = 0;
-            incs.forEach(r => { 
-                totalInc += r.amt; 
-                html += `<div class="flex justify-between py-1 border-b border-gray-100"><span>${r.category}</span> <span class="text-green-600 font-semibold">+${Math.round(r.amt)}฿</span></div>`; 
+            const incomeGroups = groupRecords(incs);
+            Object.keys(incomeGroups).forEach(label => {
+                const amount = incomeGroups[label].reduce((sum, r) => sum + recordAmount(r), 0);
+                totalInc += amount;
+                html += `<div class="flex justify-between py-1.5 border-b border-gray-100"><span>${label}</span> <span class="text-green-600 font-semibold">+${Math.round(amount)}฿</span></div>`;
             });
             
             html += '<div class="font-bold text-red-500 mb-2 mt-4"><i class="fa-solid fa-money-bill-transfer"></i> ထွက်ငွေ</div>';
             let totalExp = 0;
-            exps.forEach(r => { 
-                totalExp += r.amt; 
-                html += `<div class="flex justify-between py-1 border-b border-gray-100"><span>${r.category}</span> <span class="text-red-500 font-semibold">-${Math.round(r.amt)}฿</span></div>`; 
+            const expenseGroups = groupRecords(exps);
+            Object.keys(expenseGroups).forEach(label => {
+                const amount = expenseGroups[label].reduce((sum, r) => sum + recordAmount(r), 0);
+                totalExp += amount;
+                html += `<div class="flex justify-between py-1.5 border-b border-gray-100"><span>${label}</span> <span class="text-red-500 font-semibold">-${Math.round(amount)}฿</span></div>`;
             });
             
             document.getElementById('slipContent').innerHTML = html;
@@ -287,6 +335,14 @@
             // Modal ဖွင့်ခြင်း (Tailwind class)
             const modal = document.getElementById('slipModal');
             modal.classList.remove('hidden');
+        }
+
+        function groupRecords(items) {
+            return items.reduce((groups, record) => {
+                const label = recordLabel(record);
+                (groups[label] ||= []).push(record);
+                return groups;
+            }, {});
         }
 
         // Range Slip ပြသခြင်း
@@ -307,10 +363,14 @@
             document.getElementById('slipDateRange').innerText = `${start} မှ ${end}`;
             
             let tInc = 0, tExp = 0;
-            rangeRecs.forEach(r => { if(r.type === 'income') tInc += r.amt; else tExp += r.amt; });
+            rangeRecs.forEach(r => { if(r.type === 'income') tInc += recordAmount(r); else tExp += recordAmount(r); });
+            const otTotal = rangeRecs.filter(r => r.type === 'income' && recordLabel(r) === 'OT').reduce((sum, r) => sum + recordAmount(r), 0);
+            const wageTotal = rangeRecs.filter(r => r.type === 'income' && recordLabel(r) === 'နေ့စားခ').reduce((sum, r) => sum + recordAmount(r), 0);
             
             document.getElementById('slipContent').innerHTML = `
                 <div class="flex justify-between py-2 border-b border-gray-100"><span class="text-gray-500">စုစုပေါင်းလုပ်ရက်</span> <span class="font-semibold">${diffDays} ရက်</span></div>
+                <div class="flex justify-between py-2 border-b border-gray-100"><span class="text-gray-500">နေ့စားခ</span> <span class="font-semibold text-green-600">${Math.round(wageTotal)}฿</span></div>
+                <div class="flex justify-between py-2 border-b border-gray-100"><span class="text-gray-500">OT စုစုပေါင်း</span> <span class="font-semibold text-green-600">${Math.round(otTotal)}฿</span></div>
                 <div class="flex justify-between py-2 border-b border-gray-100"><span class="text-gray-500">စုစုပေါင်းဝင်ငွေ</span> <span class="font-semibold text-green-600">${Math.round(tInc)}฿</span></div>
                 <div class="flex justify-between py-2 border-b border-gray-100"><span class="text-gray-500">စုစုပေါင်းထွက်ငွေ</span> <span class="font-semibold text-red-500">-${Math.round(tExp)}฿</span></div>
             `;
@@ -339,11 +399,21 @@
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
                 link.href = url;
-                link.download = `pay-slip-${Date.now()}.png`;
+                const filename = `pay-slip-${Date.now()}.png`;
+                link.download = filename;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
                 URL.revokeObjectURL(url);
+                // Android/iPhone browser download ကို Gallery/Photos ထဲသို့ သိမ်းနိုင်ရန်
+                // နောက်ဆုံးစလစ်ကိုလည်း local storage တွင် မှတ်ထားပါသည်။
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const saved = JSON.parse(localStorage.getItem('saved_slips') || '[]');
+                    saved.unshift({ filename, image: reader.result, savedAt: new Date().toISOString() });
+                    localStorage.setItem('saved_slips', JSON.stringify(saved.slice(0, 5)));
+                };
+                reader.readAsDataURL(blob);
             }, 'image/png');
         }
 
