@@ -108,7 +108,7 @@
                 </div>
                 
                 <!-- Dynamic Content Area -->
-                <div id="slipContent" class="space-y-3 text-sm text-gray-700 max-h-[60vh] overflow-y-auto pr-1">
+                <div id="slipContent" class="space-y-3 text-sm text-gray-700 max-h-[55vh] overflow-y-auto pr-1">
                 </div>
                 
                 <!-- Total Calculation -->
@@ -242,22 +242,33 @@
             }
         }
 
-        // အမျိုးအစားအလိုက် အသေးစိတ် ခွဲခြားစုစည်းပေးသည့် Function
+        // အမျိုးအစား အတိအကျ ခွဲထုတ်ပေးသည့် logic
+        function getCategoryName(item) {
+            if (item.category && item.category !== 'ဝင်ငွေ' && item.category !== 'ထွက်ငွေ') {
+                return item.category;
+            }
+            if (item.title) return item.title;
+            if (item.note) return item.note;
+            if (item.otHours || item.ot) return "OT ကြေး";
+            if (item.wage) return "နေ့စဉ်ကြေး";
+            return item.type === 'income' ? 'နေ့စဉ်ကြေး/ဝင်ငွေ' : 'အထွေထွေသုံးစရိတ်';
+        }
+
         function getDetailedGroup(recordsData) {
             let grouped = {};
             recordsData.forEach(r => {
-                // Category သို့မဟုတ် Note သို့မဟုတ် Type အလိုက် အမည်သတ်မှတ်ခြင်း
-                let name = r.category || r.title || r.note || (r.type === 'income' ? 'ဝင်ငွေ' : 'ထွက်ငွေ');
-                if (!grouped[name]) {
-                    grouped[name] = { totalAmt: 0, items: [] };
+                let catName = getCategoryName(r);
+                if (!grouped[catName]) {
+                    grouped[catName] = { totalAmt: 0, count: 0, items: [] };
                 }
-                grouped[name].totalAmt += Number(r.amt);
-                grouped[name].items.push(r);
+                grouped[catName].totalAmt += Number(r.amt || r.amount || 0);
+                grouped[catName].count += 1;
+                grouped[catName].items.push(r);
             });
             return grouped;
         }
 
-        // နေ့စဉ်စလစ် (၁ ရက်စာ အသေးစိတ် စလစ်)
+        // ၁ ရက်စာ အသေးစိတ် စလစ်
         function showDailySlip(date) {
             const dayRecs = records.filter(r => r.date === date);
             if (!dayRecs.length) return;
@@ -275,7 +286,7 @@
             let totalInc = 0;
             let totalExp = 0;
 
-            // ဝင်ငွေ အမျိုးအစားများ ပြသခြင်း
+            // ဝင်ငွေ အမျိုးအစားများ
             html += `<div class="bg-green-50/60 p-2.5 rounded-xl border border-green-100 mb-2">
                         <div class="font-bold text-green-700 text-xs mb-1.5 flex items-center gap-1 border-b border-green-200/60 pb-1">
                             <i class="fa-solid fa-circle-plus"></i> ဝင်ငွေ အမျိုးအစားများ
@@ -294,7 +305,7 @@
             }
             html += `</div>`;
 
-            // ထွက်ငွေ အမျိုးအစားများ ပြသခြင်း
+            // ထွက်ငွေ အမျိုးအစားများ
             html += `<div class="bg-red-50/60 p-2.5 rounded-xl border border-red-100">
                         <div class="font-bold text-red-700 text-xs mb-1.5 flex items-center gap-1 border-b border-red-200/60 pb-1">
                             <i class="fa-solid fa-circle-minus"></i> ထွက်ငွေ အမျိုးအစားများ
@@ -319,7 +330,7 @@
             document.getElementById('slipModal').classList.remove('hidden');
         }
 
-        // ရက်ပိုင်း စလစ် (ရက်စွဲအစ/အဆုံး စလစ်)
+        // ရက်ပိုင်း စလစ်
         function generateRangeSlip() {
             const start = document.getElementById('startDate').value;
             const end = document.getElementById('endDate').value;
@@ -346,7 +357,7 @@
             let totalInc = 0;
             let totalExp = 0;
 
-            // ဝင်ငွေ အမျိုးအစားအလိုက် ခွဲခြားပြခြင်း
+            // ဝင်ငွေ အမျိုးအစားများ ခွဲပြခြင်း
             html += `<div class="bg-green-50/60 p-2.5 rounded-xl border border-green-100 mb-2">
                         <div class="font-bold text-green-700 text-xs mb-1.5 flex items-center justify-between border-b border-green-200/60 pb-1">
                             <span><i class="fa-solid fa-circle-plus"></i> ဝင်ငွေ အမျိုးအစားများ</span>
@@ -356,7 +367,7 @@
             if (Object.keys(incGroup).length > 0) {
                 for (let cat in incGroup) {
                     totalInc += incGroup[cat].totalAmt;
-                    let itemCount = incGroup[cat].items.length;
+                    let itemCount = incGroup[cat].count;
                     html += `<div class="flex justify-between items-center py-1 text-xs">
                                 <span class="font-medium text-gray-700">• ${cat} <span class="text-[10px] text-gray-400">(${itemCount}ကြိမ်)</span></span>
                                 <span class="text-green-600 font-bold">+${Math.round(incGroup[cat].totalAmt)}฿</span>
@@ -367,7 +378,7 @@
             }
             html += `</div>`;
 
-            // ထွက်ငွေ အမျိုးအစားအလိုက် ခွဲခြားပြခြင်း
+            // ထွက်ငွေ အမျိုးအစားများ ခွဲပြခြင်း
             html += `<div class="bg-red-50/60 p-2.5 rounded-xl border border-red-100">
                         <div class="font-bold text-red-700 text-xs mb-1.5 flex items-center justify-between border-b border-red-200/60 pb-1">
                             <span><i class="fa-solid fa-circle-minus"></i> ထွက်ငွေ အမျိုးအစားများ</span>
@@ -377,7 +388,7 @@
             if (Object.keys(expGroup).length > 0) {
                 for (let cat in expGroup) {
                     totalExp += expGroup[cat].totalAmt;
-                    let itemCount = expGroup[cat].items.length;
+                    let itemCount = expGroup[cat].count;
                     html += `<div class="flex justify-between items-center py-1 text-xs">
                                 <span class="font-medium text-gray-700">• ${cat} <span class="text-[10px] text-gray-400">(${itemCount}ကြိမ်)</span></span>
                                 <span class="text-red-500 font-bold">-${Math.round(expGroup[cat].totalAmt)}฿</span>
@@ -403,7 +414,7 @@
             document.getElementById('slipModal').classList.add('hidden'); 
         }
 
-        // ဖုန်းဂယ်လာရီထဲ ပုံအဖြစ် တိုက်ရိုက်ဒေါင်းလုဒ်ဆွဲရန် Function
+        // ဖုန်းဂယ်လာရီထဲ ပုံတိုက်ရိုက်ဒေါင်းလုဒ်ဆွဲခြင်း
         async function directDownload() {
             const area = document.getElementById('capture-area');
             try {
@@ -426,18 +437,32 @@
             }
         }
 
-        // စလစ်အား Share ပြုလုပ်ရန် Function
+        // မည်သည့် App သို့မဆို တိုက်ရိုက် Share ပြုလုပ်ခြင်း
         async function directShare() {
             const area = document.getElementById('capture-area');
             try {
                 const canvas = await html2canvas(area, { scale: 3, useCORS: true, backgroundColor: "#ffffff" });
                 canvas.toBlob(async (blob) => {
                     const file = new File([blob], `slip-${Date.now()}.png`, { type: 'image/png' });
-                    if (navigator.share && navigator.canShare({ files: [file] })) {
+                    
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
                         try { 
-                            await navigator.share({ files: [file], title: 'Pay Slip' }); 
+                            await navigator.share({ 
+                                files: [file], 
+                                title: 'Pay Slip',
+                                text: 'Finance Pay Slip'
+                            }); 
                         } catch (err) { 
-                            directDownload(); 
+                            if (err.name !== 'AbortError') directDownload(); 
+                        }
+                    } else if (navigator.share) {
+                        try {
+                            await navigator.share({
+                                title: 'Pay Slip',
+                                text: 'Finance Pay Slip'
+                            });
+                        } catch (err) {
+                            directDownload();
                         }
                     } else { 
                         directDownload(); 
