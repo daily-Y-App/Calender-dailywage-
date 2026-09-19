@@ -39,7 +39,6 @@
         <header class="bg-gradient-to-r from-purple-900 via-purple-800 to-red-700 text-white p-5 rounded-b-3xl shadow-lg sticky top-0 z-40">
             <div class="flex justify-between items-center mb-4">
                 <div>
-                    <!-- ခေါင်းစဉ်ကို text-xl မှ text-lg သို့ အနည်းငယ် သေးပေးထားပါသည် -->
                     <h2 id="userName" class="text-lg font-bold tracking-wide">Loading...</h2>
                     <p id="userCode" class="text-xs text-purple-200 mt-1 bg-white/20 inline-block px-2 py-1 rounded-md">CODE: ---</p>
                 </div>
@@ -99,7 +98,6 @@
                 <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-purple-700 via-red-600 to-red-500"></div>
                 
                 <div class="text-center border-b border-dashed border-gray-300 pb-4 mb-4 mt-2">
-                    <!-- Title ကို text-xl မှ text-lg သို့ အနည်းငယ် သေးပေးထားပါသည် -->
                     <h2 id="slipTypeTitle" class="text-lg font-black text-gray-800 tracking-widest">PAY SLIP</h2>
                     <p id="slipDateRange" class="text-xs text-gray-500 mt-1 font-medium"></p>
                 </div>
@@ -236,18 +234,19 @@
             }
         }
 
-        // ကက်တဂိုရီအလိုက် ပေါင်းပေးမည့် Function အသစ်
+        // ကက်တဂိုရီအလိုက် အရေအတွက်ပါ မှတ်သားမည့် Function
         function groupByCategory(recordsData) {
             let grouped = {};
             recordsData.forEach(r => {
                 let cat = r.category || 'အခြား';
-                if (!grouped[cat]) grouped[cat] = 0;
-                grouped[cat] += Number(r.amt);
+                if (!grouped[cat]) grouped[cat] = { amt: 0, count: 0 };
+                grouped[cat].amt += Number(r.amt);
+                grouped[cat].count += 1;
             });
             return grouped;
         }
 
-        // နေ့စဉ် စလစ် - OT နဲ့ နေ့စားခစသည်တို့ကို အမျိုးအစားအလိုက် ခွဲထုတ်ပြသပါမည်
+        // နေ့စဉ် စလစ် - ပေါင်းမပြတော့ဘဲ မှတ်တမ်းတစ်ခုချင်းစီကို အသေးစိတ် (Itemized) ပြသပါမည်
         function showDailySlip(date) {
             const incs = records.filter(r => r.date === date && r.type === 'income');
             const exps = records.filter(r => r.date === date && r.type === 'expense');
@@ -257,24 +256,25 @@
             document.getElementById('slipTypeTitle').innerText = "DAILY SLIP";
             document.getElementById('slipDateRange').innerText = "ရက်စွဲ: " + date;
             
-            const groupedIncs = groupByCategory(incs);
-            const groupedExps = groupByCategory(exps);
-            
             let html = '<div class="font-bold text-green-600 mb-2 mt-2"><i class="fa-solid fa-sack-dollar"></i> ဝင်ငွေအသေးစိတ်</div>';
             let totalInc = 0;
-            for(let cat in groupedIncs) {
-                totalInc += groupedIncs[cat];
-                html += `<div class="flex justify-between py-1 border-b border-gray-100 pl-2"><span>${cat}</span> <span class="text-green-600 font-semibold">+${Math.round(groupedIncs[cat])}฿</span></div>`;
-            }
-            if(Object.keys(groupedIncs).length === 0) html += `<div class="text-xs text-gray-400 pl-2">ဝင်ငွေမရှိပါ</div>`;
+            incs.forEach(r => {
+                totalInc += Number(r.amt);
+                let catName = r.category || 'ဝင်ငွေ';
+                let note = r.note ? ` <span class="text-[10px] text-gray-400">(${r.note})</span>` : '';
+                html += `<div class="flex justify-between py-1 border-b border-gray-100 pl-2"><span>${catName}${note}</span> <span class="text-green-600 font-semibold">+${Math.round(r.amt)}฿</span></div>`;
+            });
+            if(incs.length === 0) html += `<div class="text-xs text-gray-400 pl-2">ဝင်ငွေမရှိပါ</div>`;
             
             html += '<div class="font-bold text-red-500 mb-2 mt-4"><i class="fa-solid fa-money-bill-transfer"></i> ထွက်ငွေအသေးစိတ်</div>';
             let totalExp = 0;
-            for(let cat in groupedExps) {
-                totalExp += groupedExps[cat];
-                html += `<div class="flex justify-between py-1 border-b border-gray-100 pl-2"><span>${cat}</span> <span class="text-red-500 font-semibold">-${Math.round(groupedExps[cat])}฿</span></div>`;
-            }
-            if(Object.keys(groupedExps).length === 0) html += `<div class="text-xs text-gray-400 pl-2">ထွက်ငွေမရှိပါ</div>`;
+            exps.forEach(r => {
+                totalExp += Number(r.amt);
+                let catName = r.category || 'ထွက်ငွေ';
+                let note = r.note ? ` <span class="text-[10px] text-gray-400">(${r.note})</span>` : '';
+                html += `<div class="flex justify-between py-1 border-b border-gray-100 pl-2"><span>${catName}${note}</span> <span class="text-red-500 font-semibold">-${Math.round(r.amt)}฿</span></div>`;
+            });
+            if(exps.length === 0) html += `<div class="text-xs text-gray-400 pl-2">ထွက်ငွေမရှိပါ</div>`;
             
             document.getElementById('slipContent').innerHTML = html;
             document.getElementById('slipTotal').innerText = Math.round(totalInc - totalExp) + "฿";
@@ -283,7 +283,7 @@
             modal.classList.remove('hidden');
         }
 
-        // ရက်ပိုင်း စလစ် - ယခင်က Total သာပြရာမှ ယခုအခါ ဝင်ငွေ/ထွက်ငွေများကို အမျိုးအစားအလိုက် ခွဲထုတ်ပြသပါမည်
+        // ရက်ပိုင်း စလစ် - အမျိုးအစားအလိုက် အကြိမ်အရေအတွက်ပါ တွဲပြပေးပါမည်
         function generateRangeSlip() {
             const start = document.getElementById('startDate').value;
             const end = document.getElementById('endDate').value;
@@ -308,21 +308,23 @@
             
             let html = `<div class="flex justify-between py-2 border-b-2 border-gray-200 mb-2"><span class="text-gray-600 font-bold">စုစုပေါင်းလုပ်ရက်</span> <span class="font-bold text-blue-700">${diffDays} ရက်</span></div>`;
             
-            // Income List Grouped by Category
-            html += '<div class="font-bold text-green-600 mb-1 mt-3 text-sm"><i class="fa-solid fa-sack-dollar"></i> ဝင်ငွေ (အမျိုးအစားအလိုက်)</div>';
+            // Income Summary
+            html += '<div class="font-bold text-green-600 mb-1 mt-3 text-sm"><i class="fa-solid fa-sack-dollar"></i> ဝင်ငွေအသေးစိတ်</div>';
             let tInc = 0;
             for(let cat in groupedIncs) {
-                tInc += groupedIncs[cat];
-                html += `<div class="flex justify-between py-1 border-b border-gray-100 pl-4 text-sm text-gray-600"><span>${cat}</span> <span class="text-green-600 font-medium">+${Math.round(groupedIncs[cat])}฿</span></div>`;
+                tInc += groupedIncs[cat].amt;
+                let countTxt = groupedIncs[cat].count > 1 ? ` <span class="text-xs text-gray-400">(${groupedIncs[cat].count} ကြိမ်)</span>` : '';
+                html += `<div class="flex justify-between py-1 border-b border-gray-100 pl-4 text-sm text-gray-600"><span>${cat}${countTxt}</span> <span class="text-green-600 font-medium">+${Math.round(groupedIncs[cat].amt)}฿</span></div>`;
             }
             html += `<div class="flex justify-between py-1 font-bold text-sm"><span>ဝင်ငွေစုစုပေါင်း</span> <span class="text-green-600">${Math.round(tInc)}฿</span></div>`;
 
-            // Expense List Grouped by Category
-            html += '<div class="font-bold text-red-500 mb-1 mt-3 text-sm"><i class="fa-solid fa-money-bill-transfer"></i> ထွက်ငွေ (အမျိုးအစားအလိုက်)</div>';
+            // Expense Summary
+            html += '<div class="font-bold text-red-500 mb-1 mt-3 text-sm"><i class="fa-solid fa-money-bill-transfer"></i> ထွက်ငွေအသေးစိတ်</div>';
             let tExp = 0;
             for(let cat in groupedExps) {
-                tExp += groupedExps[cat];
-                html += `<div class="flex justify-between py-1 border-b border-gray-100 pl-4 text-sm text-gray-600"><span>${cat}</span> <span class="text-red-500 font-medium">-${Math.round(groupedExps[cat])}฿</span></div>`;
+                tExp += groupedExps[cat].amt;
+                let countTxt = groupedExps[cat].count > 1 ? ` <span class="text-xs text-gray-400">(${groupedExps[cat].count} ကြိမ်)</span>` : '';
+                html += `<div class="flex justify-between py-1 border-b border-gray-100 pl-4 text-sm text-gray-600"><span>${cat}${countTxt}</span> <span class="text-red-500 font-medium">-${Math.round(groupedExps[cat].amt)}฿</span></div>`;
             }
             html += `<div class="flex justify-between py-1 font-bold text-sm"><span>ထွက်ငွေစုစုပေါင်း</span> <span class="text-red-500">-${Math.round(tExp)}฿</span></div>`;
             
