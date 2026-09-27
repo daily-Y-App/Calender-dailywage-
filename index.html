@@ -244,24 +244,10 @@
 
         // အမျိုးအစား အတိအကျ ခွဲထုတ်ပေးသည့် logic
         function getCategoryName(item) {
-            if (item.category && item.category !== 'ဝင်ငွေ' && item.category !== 'ထွက်ငွေ') return item.category;
+            if (item.category) return item.category;
             if (item.title) return item.title;
             if (item.note) return item.note;
             return 'အမျိုးအစားမသတ်မှတ်ရသေး';
-        }
-
-        function getDetailedGroup(recordsData) {
-            let grouped = {};
-            recordsData.forEach(r => {
-                let catName = getCategoryName(r);
-                if (!grouped[catName]) {
-                    grouped[catName] = { totalAmt: 0, count: 0, items: [] };
-                }
-                grouped[catName].totalAmt += Number(r.amt || r.amount || 0);
-                grouped[catName].count += 1;
-                grouped[catName].items.push(r);
-            });
-            return grouped;
         }
 
         function renderRecordRows(recordsData, color, showDate = false) {
@@ -300,11 +286,11 @@
             const totalExp = expenseRows.total;
             const html = `<div class="bg-green-50/60 p-2.5 rounded-xl border border-green-100 mb-2">
                             <div class="font-bold text-green-700 text-xs mb-1.5 flex items-center gap-1 border-b border-green-200/60 pb-1">
-                                <i class="fa-solid fa-circle-plus"></i> ဝင်ငွေ (မှတ်တမ်းတစ်ကြောင်းချင်း)
+                                <i class="fa-solid fa-circle-plus"></i> ဝင်ငွေ
                             </div>${incomeRows.html}</div>
                           <div class="bg-red-50/60 p-2.5 rounded-xl border border-red-100">
                             <div class="font-bold text-red-700 text-xs mb-1.5 flex items-center gap-1 border-b border-red-200/60 pb-1">
-                                <i class="fa-solid fa-circle-minus"></i> ထွက်ငွေ (မှတ်တမ်းတစ်ကြောင်းချင်း)
+                                <i class="fa-solid fa-circle-minus"></i> ထွက်ငွေ
                             </div>${expenseRows.html}</div>`;
 
             document.getElementById('slipContent').innerHTML = html;
@@ -339,12 +325,12 @@
             const totalExp = expenseRows.total;
             const html = `<div class="bg-green-50/60 p-2.5 rounded-xl border border-green-100 mb-2">
                             <div class="font-bold text-green-700 text-xs mb-1.5 flex items-center justify-between border-b border-green-200/60 pb-1">
-                                <span><i class="fa-solid fa-circle-plus"></i> ဝင်ငွေ (မှတ်တမ်းတစ်ကြောင်းချင်း)</span>
+                                <span><i class="fa-solid fa-circle-plus"></i> ဝင်ငွေ</span>
                                 <span class="text-[10px] text-green-600 bg-green-100 px-1.5 py-0.5 rounded-full">${incs.length} ကြိမ်</span>
                             </div>${incomeRows.html}</div>
                           <div class="bg-red-50/60 p-2.5 rounded-xl border border-red-100">
                             <div class="font-bold text-red-700 text-xs mb-1.5 flex items-center justify-between border-b border-red-200/60 pb-1">
-                                <span><i class="fa-solid fa-circle-minus"></i> ထွက်ငွေ (မှတ်တမ်းတစ်ကြောင်းချင်း)</span>
+                                <span><i class="fa-solid fa-circle-minus"></i> ထွက်ငွေ</span>
                                 <span class="text-[10px] text-red-600 bg-red-100 px-1.5 py-0.5 rounded-full">${exps.length} ကြိမ်</span>
                             </div>${expenseRows.html}</div>`;
 
