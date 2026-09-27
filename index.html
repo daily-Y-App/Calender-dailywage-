@@ -273,13 +273,12 @@
 
         // အမျိုးအစား အတိအကျ ခွဲထုတ်ပေးသည့် logic
         function getCategoryName(item) {
-            if (item.category && item.category !== 'ဝင်ငွေ' && item.category !== 'ထွက်ငွေ') {
-                return item.category;
-            }
+            const raw = [item.category, item.title, item.note, item.kind].filter(Boolean).join(' ').toLowerCase();
+            if (item.otHours || item.ot || item.kind === 'ot' || raw.includes('ot') || raw.includes('overtime') || raw.includes('အချိန်ပို')) return "OT (အချိန်ပို)";
+            if (item.wage || item.kind === 'daily_wage' || raw.includes('နေ့စား') || raw.includes('နေ့စဉ်') || raw.includes('daily wage')) return "နေ့စားခ";
+            if (item.category && item.category !== 'ဝင်ငွေ' && item.category !== 'ထွက်ငွေ') return item.category;
             if (item.title) return item.title;
             if (item.note) return item.note;
-            if (item.otHours || item.ot) return "OT ကြေး";
-            if (item.wage) return "နေ့စဉ်ကြေး";
             return item.type === 'income' ? 'နေ့စဉ်ကြေး/ဝင်ငွေ' : 'အထွေထွေသုံးစရိတ်';
         }
 
