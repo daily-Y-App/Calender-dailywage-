@@ -269,6 +269,31 @@
             return { html: html || '<div class="text-xs text-gray-400 py-1">မှတ်တမ်းမရှိပါ</div>', total };
         }
 
+        function recordSearchText(record) {
+            return [record.category, record.title, record.note, record.description, record.memo, record.kind].filter(Boolean).join(' ').toLowerCase();
+        }
+
+        function isOtIncome(record) {
+            const text = recordSearchText(record);
+            return record.type === 'income' && (record.otHours || record.ot || record.kind === 'ot' || text.includes('ot') || text.includes('အချိန်ပို') || text.includes('overtime'));
+        }
+
+        function isExtraIncome(record) {
+            const text = recordSearchText(record);
+            return record.type === 'income' && !isOtIncome(record) && (record.kind === 'extra_income' || text.includes('အပို') || text.includes('ပိုဝင်') || text.includes('အခြားဝင်ငွေ') || text.includes('bonus') || text.includes('extra') || text.includes('additional') || text.includes('commission'));
+        }
+
+        function slipSection(title, color, rows, showDate) {
+            const result = renderRecordRows(rows, color, showDate);
+            const isIncome = color.includes('green') || color.includes('amber');
+            const icon = isIncome ? 'fa-circle-plus' : 'fa-circle-minus';
+            return { html: `<div class="${isIncome ? 'bg-green-50/60 border-green-100' : 'bg-red-50/60 border-red-100'} p-2.5 rounded-xl border mb-2">
+                                <div class="font-bold ${isIncome ? 'text-green-700 border-green-200/60' : 'text-red-700 border-red-200/60'} text-xs mb-1.5 flex items-center justify-between border-b pb-1">
+                                    <span><i class="fa-solid ${icon}"></i> ${title}</span>
+                                    <span class="text-[10px]">${rows.length} ကြိမ်</span>
+                                </div>${result.html}</div>`, total: result.total };
+        }
+
         // ၁ ရက်စာ အသေးစိတ် စလစ်
         function showDailySlip(date) {
             const dayRecs = records.filter(r => r.date === date);
@@ -280,18 +305,16 @@
             const incs = dayRecs.filter(r => r.type === 'income');
             const exps = dayRecs.filter(r => r.type === 'expense');
 
-            const incomeRows = renderRecordRows(incs, 'text-green-600');
-            const expenseRows = renderRecordRows(exps, 'text-red-500');
-            const totalInc = incomeRows.total;
-            const totalExp = expenseRows.total;
-            const html = `<div class="bg-green-50/60 p-2.5 rounded-xl border border-green-100 mb-2">
-                            <div class="font-bold text-green-700 text-xs mb-1.5 flex items-center gap-1 border-b border-green-200/60 pb-1">
-                                <i class="fa-solid fa-circle-plus"></i> ဝင်ငွေ
-                            </div>${incomeRows.html}</div>
-                          <div class="bg-red-50/60 p-2.5 rounded-xl border border-red-100">
-                            <div class="font-bold text-red-700 text-xs mb-1.5 flex items-center gap-1 border-b border-red-200/60 pb-1">
-                                <i class="fa-solid fa-circle-minus"></i> ထွက်ငွေ
-                            </div>${expenseRows.html}</div>`;
+            const ot = incs.filter(isOtIncome);
+            const extra = incs.filter(isExtraIncome);
+            const regular = incs.filter(r => !isOtIncome(r) && !isExtraIncome(r));
+            const regularSection = slipSection('ပုံမှန်ဝင်ငွေ', 'text-green-600', regular, false);
+            const otSection = slipSection('OT ဝင်ငွေ', 'text-amber-600', ot, false);
+            const extraSection = slipSection('အပိုဝင်ငွေ', 'text-green-600', extra, false);
+            const expenseSection = slipSection('ထွက်ငွေ', 'text-red-500', exps, false);
+            const totalInc = regularSection.total + otSection.total + extraSection.total;
+            const totalExp = expenseSection.total;
+            const html = regularSection.html + otSection.html + extraSection.html + expenseSection.html;
 
             document.getElementById('slipContent').innerHTML = html;
             document.getElementById('slipTotal').innerText = Math.round(totalInc - totalExp) + "฿";
@@ -319,20 +342,16 @@
             const incs = rangeRecs.filter(r => r.type === 'income');
             const exps = rangeRecs.filter(r => r.type === 'expense');
 
-            const incomeRows = renderRecordRows(incs, 'text-green-600', true);
-            const expenseRows = renderRecordRows(exps, 'text-red-500', true);
-            const totalInc = incomeRows.total;
-            const totalExp = expenseRows.total;
-            const html = `<div class="bg-green-50/60 p-2.5 rounded-xl border border-green-100 mb-2">
-                            <div class="font-bold text-green-700 text-xs mb-1.5 flex items-center justify-between border-b border-green-200/60 pb-1">
-                                <span><i class="fa-solid fa-circle-plus"></i> ဝင်ငွေ</span>
-                                <span class="text-[10px] text-green-600 bg-green-100 px-1.5 py-0.5 rounded-full">${incs.length} ကြိမ်</span>
-                            </div>${incomeRows.html}</div>
-                          <div class="bg-red-50/60 p-2.5 rounded-xl border border-red-100">
-                            <div class="font-bold text-red-700 text-xs mb-1.5 flex items-center justify-between border-b border-red-200/60 pb-1">
-                                <span><i class="fa-solid fa-circle-minus"></i> ထွက်ငွေ</span>
-                                <span class="text-[10px] text-red-600 bg-red-100 px-1.5 py-0.5 rounded-full">${exps.length} ကြိမ်</span>
-                            </div>${expenseRows.html}</div>`;
+            const ot = incs.filter(isOtIncome);
+            const extra = incs.filter(isExtraIncome);
+            const regular = incs.filter(r => !isOtIncome(r) && !isExtraIncome(r));
+            const regularSection = slipSection('ပုံမှန်ဝင်ငွေ', 'text-green-600', regular, true);
+            const otSection = slipSection('OT ဝင်ငွေ', 'text-amber-600', ot, true);
+            const extraSection = slipSection('အပိုဝင်ငွေ', 'text-green-600', extra, true);
+            const expenseSection = slipSection('ထွက်ငွေ', 'text-red-500', exps, true);
+            const totalInc = regularSection.total + otSection.total + extraSection.total;
+            const totalExp = expenseSection.total;
+            const html = regularSection.html + otSection.html + extraSection.html + expenseSection.html;
 
             document.getElementById('slipContent').innerHTML = html;
             document.getElementById('slipTotal').innerText = Math.round(totalInc - totalExp) + "฿";
