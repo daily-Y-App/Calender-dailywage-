@@ -279,7 +279,40 @@
             if (item.category && item.category !== 'ဝင်ငွေ' && item.category !== 'ထွက်ငွေ') return item.category;
             if (item.title) return item.title;
             if (item.note) return item.note;
-            return item.type === 'income' ? 'နေ့စဉ်ကြေး/ဝင်ငွေ' : 'အထွေထွေသုံးစရိတ်';
+            return item.type === 'income' ? 'အခြားဝင်ငွေ' : 'အထွေထွေသုံးစရိတ်';
+        }
+
+        function isOtRecord(item) {
+            const raw = [item.category, item.title, item.note, item.kind].filter(Boolean).join(' ').toLowerCase();
+            return Boolean(item.otHours || item.ot || item.kind === 'ot' || raw.includes('ot') || raw.includes('overtime') || raw.includes('အချိန်ပို'));
+        }
+
+        function isDailyWageRecord(item) {
+            const raw = [item.category, item.title, item.note, item.kind].filter(Boolean).join(' ').toLowerCase();
+            return Boolean(item.wage || item.kind === 'daily_wage' || raw.includes('နေ့စား') || raw.includes('နေ့စဉ်') || raw.includes('daily wage'));
+        }
+
+        // နေ့စားခ record မခွဲထားဘဲ 400฿ တစ်ကြောင်းတည်းဝင်လာလျှင် profile wage ကိုအခြေခံ၍ ကျန်ငွေကိုခွဲပြသည်။
+        function getIncomeBreakdown(recordsData) {
+            const groups = {};
+            const total = recordsData.reduce((sum, r) => sum + Number(r.amt || r.amount || 0), 0);
+            const otRecords = recordsData.filter(isOtRecord);
+            const wageRecords = recordsData.filter(isDailyWageRecord);
+            const add = (label, amount, count = 1) => {
+                if (amount > 0) groups[label] = { totalAmt: amount, count, items: [] };
+            };
+
+            if (!wageRecords.length && Number(profile.wage) > 0 && total > 0) {
+                const otTotal = otRecords.reduce((sum, r) => sum + Number(r.amt || r.amount || 0), 0);
+                const wageTotal = Math.min(Number(profile.wage), Math.max(0, total - otTotal));
+                const otherTotal = Math.max(0, total - otTotal - wageTotal);
+                add('နေ့စားခ', wageTotal);
+                add('OT (အချိန်ပို)', otTotal, otRecords.length);
+                add('အခြားဝင်ငွေ', otherTotal);
+                return groups;
+            }
+
+            return getDetailedGroup(recordsData);
         }
 
         function getDetailedGroup(recordsData) {
@@ -307,7 +340,7 @@
             const incs = dayRecs.filter(r => r.type === 'income');
             const exps = dayRecs.filter(r => r.type === 'expense');
 
-            const incGroup = getDetailedGroup(incs);
+            const incGroup = getIncomeBreakdown(incs);
             const expGroup = getDetailedGroup(exps);
 
             let html = '';
@@ -378,7 +411,7 @@
             const incs = rangeRecs.filter(r => r.type === 'income');
             const exps = rangeRecs.filter(r => r.type === 'expense');
 
-            const incGroup = getDetailedGroup(incs);
+            const incGroup = getIncomeBreakdown(incs);
             const expGroup = getDetailedGroup(exps);
 
             let html = '';
