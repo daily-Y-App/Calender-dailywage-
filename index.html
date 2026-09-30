@@ -263,7 +263,7 @@
                                 ${detail && detail !== getCategoryName(record) ? `<div class="text-[11px] text-gray-500 truncate">${detail}</div>` : ''}
                                 ${showDate ? `<div class="text-[10px] text-gray-400">${record.date || ''}</div>` : ''}
                             </div>
-                            <span class="${color} font-bold whitespace-nowrap">${color.includes('green') ? '+' : '-'}${Math.round(amount)}฿</span>
+                            <span class="${color} font-bold whitespace-nowrap">${(color.includes('green') || color.includes('amber')) ? '+' : '-'}${Math.round(amount)}฿</span>
                          </div>`;
             });
             return { html: html || '<div class="text-xs text-gray-400 py-1">မှတ်တမ်းမရှိပါ</div>', total };
