@@ -273,17 +273,26 @@
             return [record.category, record.title, record.note, record.description, record.memo, record.kind].filter(Boolean).join(' ').toLowerCase();
         }
 
+        function isIncomeRecord(record) {
+            return record.type === 'income' || record.type === 'ဝင်ငွေ' || record.kind === 'income';
+        }
+
+        function isExpenseRecord(record) {
+            return record.type === 'expense' || record.type === 'ထွက်ငွေ' || record.kind === 'expense';
+        }
+
         function isOtIncome(record) {
             const text = recordSearchText(record);
-            return record.type === 'income' && (record.otHours || record.ot || record.kind === 'ot' || text.includes('ot') || text.includes('အချိန်ပို') || text.includes('overtime'));
+            return isIncomeRecord(record) && (record.otHours || record.ot || record.otPay || record.overtime || record.kind === 'ot' || text.includes('ot') || text.includes('အချိန်ပို') || text.includes('အချိန်ပိုကြေး') || text.includes('overtime') || text.includes('နာရီဝက်'));
         }
 
         function isExtraIncome(record) {
             const text = recordSearchText(record);
-            return record.type === 'income' && !isOtIncome(record) && (record.kind === 'extra_income' || text.includes('အပို') || text.includes('ပိုဝင်') || text.includes('အခြားဝင်ငွေ') || text.includes('bonus') || text.includes('extra') || text.includes('additional') || text.includes('commission'));
+            return isIncomeRecord(record) && !isOtIncome(record) && (record.kind === 'extra_income' || text.includes('အပို') || text.includes('ပိုဝင်') || text.includes('အခြားဝင်ငွေ') || text.includes('bonus') || text.includes('extra') || text.includes('additional') || text.includes('commission'));
         }
 
         function slipSection(title, color, rows, showDate) {
+            if (!rows.length) return { html: '', total: 0 };
             const result = renderRecordRows(rows, color, showDate);
             const isIncome = color.includes('green') || color.includes('amber');
             const icon = isIncome ? 'fa-circle-plus' : 'fa-circle-minus';
@@ -302,8 +311,8 @@
             document.getElementById('slipTypeTitle').innerText = "DAILY PAY SLIP";
             document.getElementById('slipDateRange').innerText = "ရက်စွဲ - " + date;
 
-            const incs = dayRecs.filter(r => r.type === 'income');
-            const exps = dayRecs.filter(r => r.type === 'expense');
+            const incs = dayRecs.filter(isIncomeRecord);
+            const exps = dayRecs.filter(isExpenseRecord);
 
             const ot = incs.filter(isOtIncome);
             const extra = incs.filter(isExtraIncome);
@@ -339,8 +348,8 @@
             document.getElementById('slipTypeTitle').innerText = diffDays + "-DAYS SUMMARY SLIP";
             document.getElementById('slipDateRange').innerText = `${start} မှ ${end} အထိ`;
 
-            const incs = rangeRecs.filter(r => r.type === 'income');
-            const exps = rangeRecs.filter(r => r.type === 'expense');
+            const incs = rangeRecs.filter(isIncomeRecord);
+            const exps = rangeRecs.filter(isExpenseRecord);
 
             const ot = incs.filter(isOtIncome);
             const extra = incs.filter(isExtraIncome);
