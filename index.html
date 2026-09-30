@@ -283,12 +283,33 @@
 
         function isOtIncome(record) {
             const text = recordSearchText(record);
-            return isIncomeRecord(record) && (record.otHours || record.ot || record.otPay || record.overtime || record.kind === 'ot' || text.includes('ot') || text.includes('အချိန်ပို') || text.includes('အချိန်ပိုကြေး') || text.includes('overtime') || text.includes('နာရီဝက်'));
+            return record.incomePart === 'ot' || (isIncomeRecord(record) && (record.otHours || record.ot || record.otPay || record.overtime || record.kind === 'ot' || text.includes('ot') || text.includes('အချိန်ပို') || text.includes('အချိန်ပိုကြေး') || text.includes('overtime') || text.includes('နာရီဝက်')));
         }
 
         function isExtraIncome(record) {
             const text = recordSearchText(record);
-            return isIncomeRecord(record) && !isOtIncome(record) && (record.kind === 'extra_income' || text.includes('အပို') || text.includes('ပိုဝင်') || text.includes('အခြားဝင်ငွေ') || text.includes('bonus') || text.includes('extra') || text.includes('additional') || text.includes('commission'));
+            return record.incomePart === 'extra' || (isIncomeRecord(record) && !isOtIncome(record) && (record.kind === 'extra_income' || text.includes('အပို') || text.includes('ပိုဝင်') || text.includes('အခြားဝင်ငွေ') || text.includes('bonus') || text.includes('extra') || text.includes('additional') || text.includes('commission')));
+        }
+
+        // Home page က income record တစ်ကြောင်းထဲရှိ details { h, o, e } ကို
+        // Home ရဲ့တွက်ချက်ပုံအတိုင်း Slip မှာ အမျိုးအစား ၃ မျိုး ခွဲပြသည်။
+        function expandHomeIncomeRecords(recordsData) {
+            const expanded = [];
+            recordsData.forEach(record => {
+                const details = record.details || {};
+                const hours = Number(details.h) || 0;
+                const otHours = Number(details.o) || 0;
+                const extraAmount = Number(details.e) || 0;
+                const hasHomeBreakdown = hours > 0 || otHours > 0 || extraAmount > 0;
+                if (!hasHomeBreakdown) {
+                    expanded.push(record);
+                    return;
+                }
+                if (hours > 0) expanded.push({ ...record, category: 'နေ့စားခ', note: `${hours} နာရီ`, amt: (hours / 8) * Number(profile.wage || 0), incomePart: 'regular' });
+                if (otHours > 0) expanded.push({ ...record, category: 'OT ဝင်ငွေ', note: `${otHours} နာရီ`, amt: otHours * Number(profile.ot || 0), incomePart: 'ot' });
+                if (extraAmount > 0) expanded.push({ ...record, category: 'အပိုဝင်ငွေ', note: 'Home မှတ်တမ်းအပိုဝင်ငွေ', amt: extraAmount, incomePart: 'extra' });
+            });
+            return expanded;
         }
 
         function slipSection(title, color, rows, showDate) {
@@ -311,7 +332,7 @@
             document.getElementById('slipTypeTitle').innerText = "DAILY PAY SLIP";
             document.getElementById('slipDateRange').innerText = "ရက်စွဲ - " + date;
 
-            const incs = dayRecs.filter(isIncomeRecord);
+            const incs = expandHomeIncomeRecords(dayRecs.filter(isIncomeRecord));
             const exps = dayRecs.filter(isExpenseRecord);
 
             const ot = incs.filter(isOtIncome);
@@ -348,7 +369,7 @@
             document.getElementById('slipTypeTitle').innerText = diffDays + "-DAYS SUMMARY SLIP";
             document.getElementById('slipDateRange').innerText = `${start} မှ ${end} အထိ`;
 
-            const incs = rangeRecs.filter(isIncomeRecord);
+            const incs = expandHomeIncomeRecords(rangeRecs.filter(isIncomeRecord));
             const exps = rangeRecs.filter(isExpenseRecord);
 
             const ot = incs.filter(isOtIncome);
