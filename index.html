@@ -43,7 +43,7 @@
                     <h2 id="userName" class="text-lg font-bold tracking-wide">Loading...</h2>
                     <p id="userCode" class="text-xs text-purple-200 mt-1 bg-white/20 inline-block px-2 py-1 rounded-md">CODE: ---</p>
                 </div>
-                <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                <div id="userAvatar" class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm overflow-hidden">
                     <i class="fa-solid fa-user text-lg"></i>
                 </div>
             </div>
@@ -180,7 +180,16 @@
         function init() {
             document.getElementById('userName').innerText = profile.name;
             document.getElementById('userCode').innerText = "CODE: " + profile.code;
+            updateProfileHeader();
             renderCalendar();
+        }
+
+        function updateProfileHeader() {
+            const avatar = document.getElementById('userAvatar');
+            if (!avatar) return;
+            avatar.innerHTML = profile.avatarUrl
+                ? `<img src="${profile.avatarUrl}" alt="Profile photo" class="w-full h-full object-cover">`
+                : '<i class="fa-solid fa-user text-lg"></i>';
         }
 
         function syncData() {
@@ -198,6 +207,7 @@
                         localStorage.setItem('f_prof', JSON.stringify(profile));
                         document.getElementById('userName').innerText = profile.name;
                         document.getElementById('userCode').innerText = "CODE: " + profile.code;
+                        updateProfileHeader();
                     }
                     renderCalendar(); 
                 }
