@@ -103,6 +103,7 @@
                     <div class="bg-white rounded-xl p-3"><div class="text-gray-500">လက်ကျန်ရာခိုင်နှုန်း</div><div id="summarySavingRate" class="font-bold text-purple-700 mt-1">0%</div></div>
                     <div class="bg-white rounded-xl p-3"><div class="text-gray-500">မှတ်တမ်းရှိရက်</div><div id="summaryDays" class="font-bold text-blue-700 mt-1">0 ရက်</div></div>
                 </div>
+                <div id="summaryNotification" class="mt-3 rounded-xl bg-white/80 border border-purple-100 p-3 text-xs text-purple-800 leading-relaxed">ဒီလအခြေအနေကို တွက်ချက်နေပါသည်။</div>
             </div>
         </main>
     </div>
@@ -211,11 +212,22 @@
             const expense = monthRecords.filter(isExpenseRecord).reduce((sum, r) => sum + Number(r.amt || r.amount || 0), 0);
             const savingRate = income > 0 ? Math.max(0, Math.min(100, ((income - expense) / income) * 100)) : 0;
             const days = new Set(monthRecords.map(r => r.date).filter(Boolean)).size;
+            const net = income - expense;
             document.getElementById('summaryIncome').innerText = `+${Math.round(income)}฿`;
             document.getElementById('summaryExpense').innerText = `-${Math.round(expense)}฿`;
             document.getElementById('summarySavingRate').innerText = `${savingRate.toFixed(0)}%`;
             document.getElementById('summaryDays').innerText = `${days} ရက်`;
             document.getElementById('summaryStatus').innerText = income === 0 ? 'မှတ်တမ်းမရှိသေး' : ((income - expense) >= 0 ? 'အဆင်ပြေ' : 'သတိပြုရန်');
+            const notification = document.getElementById('summaryNotification');
+            notification.innerText = income === 0
+                ? '🔔 ဒီလဝင်ငွေမှတ်တမ်း မရှိသေးပါ။'
+                : net < 0
+                    ? `🚨 သတိပေးချက် — ဒီလလက်ကျန် အနုတ် ${Math.abs(net).toFixed(0)}฿ ဖြစ်နေပါတယ်။`
+                    : savingRate < 20
+                        ? `⚠️ သတိပြုရန် — ဒီလလက်ကျန်နှုန်း ${savingRate.toFixed(0)}% သာရှိပါတယ်။`
+                        : savingRate >= 50
+                            ? `✅ အခြေအနေကောင်း — ဒီလလက်ကျန်နှုန်း ${savingRate.toFixed(0)}% ရှိပါတယ်။`
+                            : `ℹ️ ဒီလလက်ကျန်နှုန်း ${savingRate.toFixed(0)}% ရှိပါတယ်။`;
         }
 
             function renderCalendar() {
