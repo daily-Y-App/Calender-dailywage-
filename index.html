@@ -49,10 +49,10 @@
             </div>
 
             <div class="grid grid-cols-2 gap-2 mt-3">
-                <a href="https://daily-y-app.github.io/Dailywage-/" class="bg-white/10 hover:bg-white/20 transition-all border border-white/30 text-center py-2.5 rounded-xl text-sm font-semibold backdrop-blur-md flex items-center justify-center gap-2 shadow-sm">
+                <a id="homeLink" href="https://daily-y-app.github.io/Dailywage-/" class="bg-white/10 hover:bg-white/20 transition-all border border-white/30 text-center py-2.5 rounded-xl text-sm font-semibold backdrop-blur-md flex items-center justify-center gap-2 shadow-sm">
                     <i class="fa-solid fa-home text-purple-300"></i> Home
                 </a>
-                <a href="https://daily-y-app.github.io/Battle-wage/" class="bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 transition-all border border-red-400 text-center py-2.5 rounded-xl text-sm font-semibold shadow-md flex items-center justify-center gap-2">
+                <a id="battleLink" href="https://daily-y-app.github.io/Battle-wage/" class="bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 transition-all border border-red-400 text-center py-2.5 rounded-xl text-sm font-semibold shadow-md flex items-center justify-center gap-2">
                     <i class="fa-solid fa-fire text-yellow-300"></i> Battle
                 </a>
             </div>
@@ -170,6 +170,8 @@
 
         let records = JSON.parse(localStorage.getItem('f_recs')) || [];
         let profile = JSON.parse(localStorage.getItem('f_prof')) || { name: 'User', code: 'EMP001', wage: 375, ot: 69 };
+        const profileCodeFromUrl = new URLSearchParams(location.search).get('code');
+        if (profileCodeFromUrl) profile.code = profileCodeFromUrl;
         let currentDate = new Date();
 
         window.onload = () => {
@@ -180,6 +182,8 @@
         function init() {
             document.getElementById('userName').innerText = profile.name;
             document.getElementById('userCode').innerText = "CODE: " + profile.code;
+            document.getElementById('homeLink').href = `https://daily-y-app.github.io/Dailywage-/?code=${encodeURIComponent(profile.code)}`;
+            document.getElementById('battleLink').href = `https://daily-y-app.github.io/Battle-wage/?code=${encodeURIComponent(profile.code)}`;
             updateProfileHeader();
             renderCalendar();
         }
@@ -187,9 +191,10 @@
         function updateProfileHeader() {
             const avatar = document.getElementById('userAvatar');
             if (!avatar) return;
-            avatar.innerHTML = profile.avatarUrl
+            const selectedAvatar = profile.avatar || profile.av || '👤';
+            avatar.innerHTML = profile.avatarMode === 'image' && profile.avatarUrl
                 ? `<img src="${profile.avatarUrl}" alt="Profile photo" class="w-full h-full object-cover">`
-                : '<i class="fa-solid fa-user text-lg"></i>';
+                : `<span class="text-2xl">${selectedAvatar}</span>`;
         }
 
         function syncData() {
